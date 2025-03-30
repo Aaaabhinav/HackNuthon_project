@@ -424,13 +424,6 @@ const TestReport = ({ testResults }) => {
               })()}
             </div>
           </div>
-          
-          <div className="report-html-preview">
-            <h3>Test Report HTML</h3>
-            <div className="html-report-container">
-              <pre>{generateLocalReport()}</pre>
-            </div>
-          </div>
         </div>
       ) : (
         <div className="empty-state">

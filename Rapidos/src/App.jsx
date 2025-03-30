@@ -330,7 +330,7 @@ function App() {
   return (
     <div className="app">
       <header>
-        <h1>Rapidos</h1>
+        <h1>AutoTestPilot</h1>
         <p>AI-powered application generator from Figma designs</p>
       </header>
 
@@ -405,7 +405,7 @@ function App() {
       </main>
 
       <footer>
-        <p>Rapidos • AI-powered Rapid Application Development • &copy; {new Date().getFullYear()}</p>
+        <p>AutoTestPilot • AI-powered Rapid Application Development • &copy; {new Date().getFullYear()}</p>
       </footer>
     </div>
   );

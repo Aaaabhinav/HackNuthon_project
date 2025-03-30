@@ -65,7 +65,12 @@ const RequirementsGenerator = ({ figmaBlueprint, onRequirementsGenerated }) => {
         <div className="requirements-list">
           <ol>
             {requirements.map((req, index) => (
-              <li key={index}>{req}</li>
+              <li key={index} className="requirement-item">
+                <div className="requirement-checkbox">
+                  <input type="checkbox" id={`req-${index}`} checked={true} readOnly />
+                  <label htmlFor={`req-${index}`}>{req}</label>
+                </div>
+              </li>
             ))}
           </ol>
           <button 
