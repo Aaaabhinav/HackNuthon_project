@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
 import './App.css';
+import FunctionalRequirements from './components/FunctionalRequirements';
+import BackendCode from './components/BackendCode';
+import TestCases from './components/TestCases';
+import TestAutomation from './components/TestAutomation';
+import FinalPreview from './components/FinalPreview';
 
 // Insert your Figma API key here
 const FIGMA_API_KEY = 'figd_IBAmJi0BxWUtMQPcVqfFLGco9eOsjbO8mR380lag';
@@ -11,6 +16,9 @@ function App() {
   const [structureData, setStructureData] = useState(null);
   const [htmlData, setHtmlData] = useState(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [functionalRequirements, setFunctionalRequirements] = useState([]);
+  const [testCases, setTestCases] = useState([]);
+  const [activeTab, setActiveTab] = useState('main');
 
   // Check if we're in a browser environment
   const isBrowser = typeof window !== 'undefined';
@@ -156,6 +164,16 @@ function App() {
     }
   };
 
+  // Handle receiving functional requirements from child component
+  const handleRequirementsUpdate = (updatedRequirements) => {
+    setFunctionalRequirements(updatedRequirements);
+  };
+
+  // Handle receiving test cases from child component
+  const handleTestCasesUpdate = (updatedTestCases) => {
+    setTestCases(updatedTestCases);
+  };
+
   const highlightJson = (json) => {
     try {
       if (!json) return 'Structure will appear here after analysis';
@@ -188,88 +206,167 @@ function App() {
       <header className="app-header">
         <h1>Design Deployer</h1>
         <p className="app-lead">Extract structure and generate HTML from any URL (including Figma designs)</p>
+        <nav className="app-nav">
+          <ul className="nav-tabs">
+            <li 
+              className={`nav-item ${activeTab === 'main' ? 'active' : ''}`}
+              onClick={() => setActiveTab('main')}
+            >
+              Main
+            </li>
+            <li 
+              className={`nav-item ${activeTab === 'requirements' ? 'active' : ''}`}
+              onClick={() => setActiveTab('requirements')}
+            >
+              Requirements
+            </li>
+            <li 
+              className={`nav-item ${activeTab === 'backend' ? 'active' : ''}`}
+              onClick={() => setActiveTab('backend')}
+            >
+              Backend
+            </li>
+            <li 
+              className={`nav-item ${activeTab === 'tests' ? 'active' : ''}`}
+              onClick={() => setActiveTab('tests')}
+            >
+              Tests
+            </li>
+            <li 
+              className={`nav-item ${activeTab === 'preview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('preview')}
+            >
+              Preview
+            </li>
+          </ul>
+        </nav>
       </header>
 
       <div className="main-content">
-        <div className="input-section">
-          <div className="card">
-            <div className="card-body">
-              <h5 className="card-title">Enter URL</h5>
-              <div className="input-group">
-                <input 
-                  type="text" 
-                  id="figmaUrl" 
-                  className="form-control" 
-                  placeholder="https://example.com or https://www.figma.com/file/..." 
-                  value={url}
-                  onChange={handleUrlChange}
-                  onKeyPress={handleKeyPress}
-                />
-                <button 
-                  className="btn btn-primary" 
-                  type="button" 
-                  onClick={analyzeUrl}
-                >
-                  Analyze
-                </button>
-              </div>
-              <small className="text-muted">Enter any URL. For Figma designs, use format: figma.com/file_type/file_key/file_name</small>
-              {urlError && <div className="url-error">Please enter a valid URL</div>}
-              {isLoading && (
-                <div className="loading-indicator">
-                  <div className="spinner"></div>
-                  <p>Analyzing URL...</p>
+        {activeTab === 'main' && (
+          <>
+            <div className="input-section">
+              <div className="card">
+                <div className="card-body">
+                  <h5 className="card-title">Enter URL</h5>
+                  <div className="input-group">
+                    <input 
+                      type="text" 
+                      id="figmaUrl" 
+                      className="form-control" 
+                      placeholder="https://example.com or https://www.figma.com/file/..." 
+                      value={url}
+                      onChange={handleUrlChange}
+                      onKeyPress={handleKeyPress}
+                    />
+                    <button 
+                      className="btn btn-primary" 
+                      type="button" 
+                      onClick={analyzeUrl}
+                    >
+                      Analyze
+                    </button>
+                  </div>
+                  <small className="text-muted">Enter any URL. For Figma designs, use format: figma.com/file_type/file_key/file_name</small>
+                  {urlError && <div className="url-error">Please enter a valid URL</div>}
+                  {isLoading && (
+                    <div className="loading-indicator">
+                      <div className="spinner"></div>
+                      <p>Analyzing URL...</p>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div className="output-section">
-          <div className="output-row">
-            <div className="card structure-card">
-              <div className="card-header">
-                <h5>Structure</h5>
-              </div>
-              <div className="card-body">
-                <div className="output-container">
-                  {!structureData && !isLoading && (
-                    <div className="placeholder-text">Structure will appear here after analysis</div>
-                  )}
-                  {isLoading && (
-                    <div className="placeholder-text">Analyzing...</div>
-                  )}
-                  {structureData && highlightJson(structureData)}
+            <div className="output-section">
+              <div className="output-row">
+                <div className="card structure-card">
+                  <div className="card-header">
+                    <h5>Structure</h5>
+                  </div>
+                  <div className="card-body">
+                    <div className="output-container">
+                      {!structureData && !isLoading && (
+                        <div className="placeholder-text">Structure will appear here after analysis</div>
+                      )}
+                      {isLoading && (
+                        <div className="placeholder-text">Analyzing...</div>
+                      )}
+                      {structureData && highlightJson(structureData)}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="card html-card">
+                  <div className="card-header">
+                    <h5>Generated HTML</h5>
+                  </div>
+                  <div className="card-body">
+                    <div className="output-container">
+                      {!htmlData && !isLoading && (
+                        <div className="placeholder-text">HTML will appear here after analysis</div>
+                      )}
+                      {isLoading && (
+                        <div className="placeholder-text">Generating HTML...</div>
+                      )}
+                      {htmlData && highlightHtml(htmlData)}
+                    </div>
+                    {htmlData && (
+                      <button 
+                        className="btn btn-outline-primary copy-btn"
+                        onClick={handleCopyHtml}
+                      >
+                        {copySuccess ? 'Copied!' : 'Copy HTML'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-            
-            <div className="card html-card">
-              <div className="card-header">
-                <h5>Generated HTML</h5>
-              </div>
-              <div className="card-body">
-                <div className="output-container">
-                  {!htmlData && !isLoading && (
-                    <div className="placeholder-text">HTML will appear here after analysis</div>
-                  )}
-                  {isLoading && (
-                    <div className="placeholder-text">Generating HTML...</div>
-                  )}
-                  {htmlData && highlightHtml(htmlData)}
-                </div>
-                {htmlData && (
-                  <button 
-                    className="btn btn-outline-primary copy-btn"
-                    onClick={handleCopyHtml}
-                  >
-                    {copySuccess ? 'Copied!' : 'Copy HTML'}
-                  </button>
-                )}
-              </div>
-            </div>
+          </>
+        )}
+
+        {activeTab === 'requirements' && (
+          <div className="requirements-container">
+            <FunctionalRequirements 
+              structureData={structureData} 
+              htmlData={htmlData}
+              onRequirementsUpdate={handleRequirementsUpdate}
+            />
           </div>
-        </div>
+        )}
+
+        {activeTab === 'backend' && (
+          <div className="backend-container">
+            <BackendCode 
+              functionalRequirements={functionalRequirements}
+              structureData={structureData}
+              htmlData={htmlData}
+            />
+          </div>
+        )}
+
+        {activeTab === 'tests' && (
+          <div className="tests-container">
+            <TestCases 
+              functionalRequirements={functionalRequirements}
+              onTestCasesUpdate={handleTestCasesUpdate}
+            />
+            <TestAutomation testCases={testCases} />
+          </div>
+        )}
+
+        {activeTab === 'preview' && (
+          <div className="preview-container">
+            <FinalPreview 
+              structureData={structureData}
+              htmlData={htmlData}
+              functionalRequirements={functionalRequirements}
+              testCases={testCases}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
