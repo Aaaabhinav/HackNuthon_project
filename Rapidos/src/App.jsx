@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './App.css';
+import GeminiWorkflow from './components/GeminiWorkflow';
 
 // Figma API token
 const FIGMA_API_TOKEN = 'figd_IBAmJi0BxWUtMQPcVqfFLGco9eOsjbO8mR380lag';
@@ -10,6 +11,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [blueprintData, setBlueprintData] = useState(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [parsedBlueprint, setParsedBlueprint] = useState(null);
+  const [activeTab, setActiveTab] = useState('blueprint'); // 'blueprint' or 'workflow'
 
   // Update URL and clear error if any.
   const handleUrlChange = (e) => {
@@ -266,13 +269,17 @@ function App() {
     setUrlError(false);
     setIsLoading(true);
     setBlueprintData(null);
+    setParsedBlueprint(null);
 
     if (trimmedUrl.includes('figma.com')) {
       try {
         const fileKey = extractFileKey(trimmedUrl);
         fetchFigmaFile(fileKey)
           .then((blueprint) => {
-            // Display the design blueprint JSON.
+            // Store the parsed blueprint for the GeminiWorkflow component
+            setParsedBlueprint(blueprint);
+            
+            // Display the design blueprint JSON as string
             setBlueprintData(JSON.stringify(blueprint, null, 2));
             setIsLoading(false);
           })
@@ -324,7 +331,7 @@ function App() {
     <div className="app">
       <header>
         <h1>Rapidos</h1>
-        <p>Analyze Figma URLs and generate a detailed design blueprint for full‑stack development</p>
+        <p>Analyze Figma URLs and generate a full-stack application with testing</p>
       </header>
       <main>
         <div className="url-input">
@@ -334,7 +341,7 @@ function App() {
               value={url}
               onChange={handleUrlChange}
               onKeyPress={handleKeyPress}
-              placeholder="Enter a URL (including Figma links)"
+              placeholder="Enter a Figma URL to analyze and build an application"
               className={urlError ? 'error' : ''}
             />
             <button onClick={analyzeUrl} disabled={isLoading}>
@@ -350,15 +357,31 @@ function App() {
           </div>
         )}
 
-        {!isLoading && blueprintData && (
+        {!isLoading && parsedBlueprint && (
+          <div className="tabs">
+            <button 
+              className={`tab ${activeTab === 'blueprint' ? 'active' : ''}`}
+              onClick={() => setActiveTab('blueprint')}
+            >
+              Blueprint JSON
+            </button>
+            <button 
+              className={`tab ${activeTab === 'workflow' ? 'active' : ''}`}
+              onClick={() => setActiveTab('workflow')}
+            >
+              AI Development Workflow
+            </button>
+          </div>
+        )}
+
+        {!isLoading && blueprintData && activeTab === 'blueprint' && (
           <div className="results">
             <div className="section">
               <h2>
-                Design Blueprint (JSON)
-                <button
-                  className="copy-button"
+                Design Blueprint
+                <button 
+                  className="copy-button" 
                   onClick={handleCopyBlueprint}
-                  title="Copy JSON to clipboard"
                 >
                   {copySuccess ? 'Copied!' : 'Copy'}
                 </button>
@@ -366,6 +389,10 @@ function App() {
               <pre>{blueprintData}</pre>
             </div>
           </div>
+        )}
+
+        {!isLoading && parsedBlueprint && activeTab === 'workflow' && (
+          <GeminiWorkflow figmaBlueprint={parsedBlueprint} />
         )}
       </main>
     </div>

@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import ApiService from './ApiService';
 
 const TestCases = ({ functionalRequirements, onTestCasesUpdate }) => {
   const [testCases, setTestCases] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [showTestCases, setShowTestCases] = useState(true);
 
   useEffect(() => {
@@ -10,135 +13,106 @@ const TestCases = ({ functionalRequirements, onTestCasesUpdate }) => {
     }
   }, [functionalRequirements]);
 
-  const generateTestCases = (requirements) => {
-    // Generate test cases based on functional requirements
-    const generatedTestCases = requirements.map((req, index) => {
-      return {
-        id: `TC-${index + 1}`,
-        name: `Test: ${req.substring(0, 40)}${req.length > 40 ? '...' : ''}`,
-        description: req,
-        steps: generateStepsForRequirement(req),
-        expectedResult: generateExpectedResult(req),
-        priority: getPriority(index, requirements.length)
-      };
-    });
-
-    setTestCases(generatedTestCases);
+  const generateTestCases = async (requirements) => {
+    if (!requirements || requirements.length === 0) return;
     
-    // Call the callback to notify parent component
-    if (onTestCasesUpdate) {
-      onTestCasesUpdate(generatedTestCases);
-    }
-  };
-
-  const generateStepsForRequirement = (requirement) => {
-    // Generate test steps based on the requirement text
-    const lowerReq = requirement.toLowerCase();
-    let steps = [];
-
-    if (lowerReq.includes('display')) {
-      steps.push('Navigate to the web page');
-      steps.push('Verify the element is visible on the page');
-      steps.push('Check if the element displays correct content');
-    } else if (lowerReq.includes('navigation') || lowerReq.includes('link')) {
-      steps.push('Navigate to the web page');
-      steps.push('Locate the navigation menu/link');
-      steps.push('Click on the navigation item');
-      steps.push('Verify correct page loads');
-    } else if (lowerReq.includes('responsive') || lowerReq.includes('device')) {
-      steps.push('Resize browser window to mobile dimensions');
-      steps.push('Verify layout adjusts correctly');
-      steps.push('Resize browser window to tablet dimensions');
-      steps.push('Verify layout adjusts correctly');
-      steps.push('Resize browser window to desktop dimensions');
-      steps.push('Verify layout adjusts correctly');
-    } else if (lowerReq.includes('image') || lowerReq.includes('alt text')) {
-      steps.push('Navigate to the web page');
-      steps.push('Inspect image elements');
-      steps.push('Verify all images have alt attributes');
-    } else if (lowerReq.includes('form') || lowerReq.includes('validation')) {
-      steps.push('Navigate to the form');
-      steps.push('Try submitting the form without entering data');
-      steps.push('Enter invalid data and submit the form');
-      steps.push('Enter valid data and submit the form');
-      steps.push('Verify appropriate validation messages appear');
-    } else {
-      // Generic steps for other types of requirements
-      steps.push('Navigate to the relevant page section');
-      steps.push('Verify the requirement is implemented correctly');
-      steps.push('Test the functionality with various inputs');
-    }
-
-    return steps;
-  };
-
-  const generateExpectedResult = (requirement) => {
-    const lowerReq = requirement.toLowerCase();
+    setLoading(true);
+    setError(null);
     
-    if (lowerReq.includes('display')) {
-      return 'Element is visible and displays the correct content';
-    } else if (lowerReq.includes('navigation') || lowerReq.includes('link')) {
-      return 'Clicking the navigation item loads the correct page';
-    } else if (lowerReq.includes('responsive') || lowerReq.includes('device')) {
-      return 'Website layout adjusts properly to different screen sizes';
-    } else if (lowerReq.includes('image') || lowerReq.includes('alt text')) {
-      return 'All images have appropriate alt text for accessibility';
-    } else if (lowerReq.includes('form') || lowerReq.includes('validation')) {
-      return 'Form validation works correctly for all input states';
-    } else {
-      return 'The feature works as specified in the requirement';
+    try {
+      // Call Gemini API to generate test cases based on requirements
+      const generatedTestCases = await ApiService.generateTestCases(requirements);
+      setTestCases(generatedTestCases);
+      
+      // Notify parent component about new test cases
+      if (onTestCasesUpdate) {
+        onTestCasesUpdate(generatedTestCases);
+      }
+    } catch (err) {
+      console.error('Error generating test cases:', err);
+      setError('Failed to generate test cases. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const getPriority = (index, total) => {
-    // Assign priorities based on the index and total number of requirements
-    if (index < total * 0.3) return 'High';
-    if (index < total * 0.7) return 'Medium';
+    if (index < Math.ceil(total * 0.3)) return 'High';
+    if (index < Math.ceil(total * 0.7)) return 'Medium';
     return 'Low';
   };
 
+  const generateStepsForRequirement = (requirement) => {
+    // Generate placeholder steps based on the requirement
+    const baseSteps = [
+      'Navigate to the relevant section',
+      'Perform the required action',
+      'Verify the expected outcome'
+    ];
+    
+    return baseSteps;
+  };
+
+  const generateExpectedResult = (requirement) => {
+    return `The system successfully performs the required function: ${requirement.substring(0, 100)}${requirement.length > 100 ? '...' : ''}`;
+  };
+
+  const toggleTestCases = () => {
+    setShowTestCases(!showTestCases);
+  };
+
+  const regenerateTestCases = () => {
+    if (functionalRequirements && functionalRequirements.length > 0) {
+      generateTestCases(functionalRequirements);
+    }
+  };
+
   return (
-    <div className="card test-cases-card">
-      <div className="card-header">
-        <h5>Test Cases</h5>
-        <button 
-          className="btn btn-sm btn-outline-primary" 
-          onClick={() => setShowTestCases(!showTestCases)}
-        >
-          {showTestCases ? 'Hide Test Cases' : 'Show Test Cases'}
+    <div className="section">
+      <h2>
+        Test Cases
+        <button className="toggle-button" onClick={toggleTestCases}>
+          {showTestCases ? 'Hide' : 'Show'}
         </button>
-      </div>
-      {showTestCases && (
-        <div className="card-body">
-          {testCases.length === 0 ? (
-            <div className="placeholder-text">Test cases will be generated based on functional requirements</div>
-          ) : (
-            <div className="test-cases-list">
-              {testCases.map((testCase) => (
-                <div key={testCase.id} className="test-case-item">
-                  <div className="test-case-header">
-                    <h6>{testCase.id}: {testCase.name}</h6>
-                    <span className={`priority-badge priority-${testCase.priority.toLowerCase()}`}>
-                      {testCase.priority}
-                    </span>
-                  </div>
-                  <div className="test-case-description">
-                    <p><strong>Requirement:</strong> {testCase.description}</p>
-                  </div>
-                  <div className="test-case-steps">
-                    <p><strong>Steps:</strong></p>
-                    <ol>
-                      {testCase.steps.map((step, i) => (
-                        <li key={i}>{step}</li>
-                      ))}
-                    </ol>
-                  </div>
-                  <div className="test-case-expected">
-                    <p><strong>Expected Result:</strong> {testCase.expectedResult}</p>
-                  </div>
-                </div>
-              ))}
+        {testCases.length > 0 && (
+          <button className="regenerate-button" onClick={regenerateTestCases}>
+            Regenerate
+          </button>
+        )}
+      </h2>
+      
+      {loading && <div className="loading">Generating test cases...</div>}
+      
+      {error && <div className="error-message">{error}</div>}
+      
+      {!loading && !error && showTestCases && testCases.length > 0 && (
+        <div className="test-cases-list">
+          {testCases.map((testCase, index) => (
+            <div key={index} className="test-case-item">
+              <h3>{testCase.id}: {testCase.name}</h3>
+              <p><strong>Description:</strong> {testCase.description}</p>
+              <div className="test-steps">
+                <strong>Steps:</strong>
+                <ol>
+                  {testCase.steps.map((step, stepIndex) => (
+                    <li key={stepIndex}>{step}</li>
+                  ))}
+                </ol>
+              </div>
+              <p><strong>Expected Result:</strong> {testCase.expectedResult}</p>
+              <p><strong>Priority:</strong> <span className={`priority ${testCase.priority.toLowerCase()}`}>{testCase.priority}</span></p>
             </div>
+          ))}
+        </div>
+      )}
+      
+      {!loading && !error && testCases.length === 0 && (
+        <div className="empty-state">
+          <p>No test cases generated yet.</p>
+          {functionalRequirements && functionalRequirements.length > 0 && (
+            <button className="generate-button" onClick={() => generateTestCases(functionalRequirements)}>
+              Generate Test Cases
+            </button>
           )}
         </div>
       )}

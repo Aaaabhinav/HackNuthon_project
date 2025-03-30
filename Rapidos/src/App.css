@@ -209,6 +209,35 @@ main {
   transform: translateY(-2px);
 }
 
+/* Tabbed interface */
+.tabs {
+  display: flex;
+  margin: 20px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.tab {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  padding: 10px 20px;
+  margin-right: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.tab:hover {
+  background: #e5e5e5;
+}
+
+.tab.active {
+  background: #fff;
+  border-bottom: 1px solid #fff;
+  margin-bottom: -1px;
+  font-weight: bold;
+}
+
 /* Responsive adjustments */
 @media (min-width: 992px) {
   .results {
