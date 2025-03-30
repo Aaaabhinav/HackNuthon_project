@@ -333,7 +333,6 @@ const TestReport = ({ testResults, generatedCode, figmaFileKey }) => {
           <button 
             className={`tab-button ${activeTab === 'github' ? 'active' : ''}`}
             onClick={() => setActiveTab('github')}
-            disabled={!githubResults && !isLoading}
           >
             GitHub Test Results
             {isLoading && <span className="loading-indicator"></span>}
@@ -640,11 +639,9 @@ const TestReport = ({ testResults, generatedCode, figmaFileKey }) => {
             <div className="empty-state">
               <div className="empty-icon">🔍</div>
               <p>No GitHub test results available yet.</p>
-              {generatedCode && (
-                <button className="button" onClick={triggerGitHubTest}>
-                  Run GitHub Tests
-                </button>
-              )}
+              <button className="button" onClick={triggerGitHubTest}>
+                Run GitHub Tests
+              </button>
             </div>
           )}
         </div>
