@@ -1,0 +1,213 @@
+/* GeminiWorkflow.css - Enhanced styling for workflow navigation and steps */
+
+.gemini-workflow {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Workflow steps navigation */
+.workflow-steps {
+  display: flex;
+  justify-content: space-between;
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  position: sticky;
+  top: 20px;
+  z-index: 10;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+@media (max-width: 768px) {
+  .workflow-steps {
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+  }
+}
+
+.workflow-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  flex: 1;
+}
+
+.workflow-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  right: -50%;
+  width: 100%;
+  height: 3px;
+  background-color: #e9ecef;
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .workflow-step:not(:last-child)::after {
+    top: auto;
+    right: auto;
+    bottom: -10px;
+    left: 20px;
+    width: 3px;
+    height: 20px;
+  }
+  
+  .workflow-step {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 16px;
+  }
+}
+
+.workflow-step.completed:not(:last-child)::after {
+  background-color: var(--primary-color);
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f8f9fa;
+  border: 2px solid #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  color: #adb5bd;
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .step-number {
+    margin-bottom: 0;
+  }
+}
+
+.workflow-step.active .step-number {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+  box-shadow: 0 0 0 5px rgba(67, 97, 238, 0.15);
+}
+
+.workflow-step.completed .step-number {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.workflow-step.completed .step-number::after {
+  content: '✓';
+  font-size: 16px;
+}
+
+.step-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6c757d;
+  transition: all 0.3s ease;
+}
+
+.workflow-step.active .step-name {
+  color: var(--primary-color);
+}
+
+.workflow-step.completed .step-name {
+  color: var(--primary-color);
+}
+
+/* Workflow content section */
+.workflow-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Empty state styling */
+.empty-state {
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 60px 20px;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.empty-state p {
+  color: #6c757d;
+  font-size: 16px;
+  margin: 0;
+}
+
+/* Workflow completion message */
+.workflow-completion {
+  background-color: #f1f9f5;
+  border-radius: 10px;
+  padding: 24px;
+  margin-top: 16px;
+  text-align: center;
+  border-left: 4px solid var(--success-color);
+}
+
+.workflow-completion h3 {
+  color: var(--success-color);
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.workflow-completion p {
+  margin: 0 0 8px 0;
+  color: #495057;
+}
+
+/* Component section styling */
+.requirement-section, .application-section, .test-cases-section, .test-scenarios-section, .testing-section, .report-section {
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  margin-bottom: 30px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.section-content {
+  margin-top: 20px;
+}
+
+/* Animation for active step */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(67, 97, 238, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0); }
+}
+
+.workflow-step.active .step-number {
+  animation: pulse 2s infinite;
+}

@@ -2,9 +2,6 @@ import { useState } from 'react';
 import './App.css';
 import GeminiWorkflow from './components/GeminiWorkflow';
 
-// Default Figma API token (you can change this if needed)
-const DEFAULT_FIGMA_API_TOKEN = 'figd_IBAmJi0BxWUtMQPcVqfFLGco9eOsjbO8mR380lag';
-
 function App() {
   const [url, setUrl] = useState('');
   const [urlError, setUrlError] = useState(false);
@@ -13,8 +10,9 @@ function App() {
   const [copySuccess, setCopySuccess] = useState(false);
   const [parsedBlueprint, setParsedBlueprint] = useState(null);
   const [activeTab, setActiveTab] = useState('blueprint'); // 'blueprint' or 'workflow'
-  const [figmaApiToken, setFigmaApiToken] = useState(DEFAULT_FIGMA_API_TOKEN);
-  const [showApiSettings, setShowApiSettings] = useState(false);
+  
+  // Hardcoded Figma API token - no longer user configurable
+  const figmaApiToken = 'figd_IBAmJi0BxWUtMQPcVqfFLGco9eOsjbO8mR380lag';
 
   // Update URL and clear error if any.
   const handleUrlChange = (e) => {
@@ -329,42 +327,12 @@ function App() {
     }
   };
 
-  // Toggle API settings display
-  const toggleApiSettings = () => {
-    setShowApiSettings(!showApiSettings);
-  };
-
   return (
     <div className="app">
       <header>
         <h1>Rapidos</h1>
         <p>AI-powered application generator from Figma designs</p>
-        <button 
-          className="api-settings-button" 
-          onClick={toggleApiSettings}
-          title="Configure Figma API Token"
-        >
-          ⚙️ Figma API Settings
-        </button>
       </header>
-
-      {showApiSettings && (
-        <div className="api-settings-panel">
-          <h2>Figma API Configuration</h2>
-          <div className="api-input-group">
-            <label htmlFor="figma-api-token">Figma API Token:</label>
-            <input
-              id="figma-api-token"
-              type="password"
-              value={figmaApiToken}
-              onChange={(e) => setFigmaApiToken(e.target.value)}
-              placeholder="Enter your Figma API token"
-            />
-            <small>Used for accessing Figma designs</small>
-          </div>
-          <button className="close-settings" onClick={toggleApiSettings}>Close Settings</button>
-        </div>
-      )}
 
       <main>
         <div className="url-input">

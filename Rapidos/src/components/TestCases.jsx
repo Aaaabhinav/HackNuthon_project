@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import ApiService from './ApiService';
+import './TestCases.css';
 
 const TestCases = ({ functionalRequirements, onTestCasesUpdate }) => {
   const [testCases, setTestCases] = useState([]);
@@ -22,11 +23,33 @@ const TestCases = ({ functionalRequirements, onTestCasesUpdate }) => {
     try {
       // Call Gemini API to generate test cases based on requirements
       const generatedTestCases = await ApiService.generateTestCases(functionalRequirements);
-      setTestCases(generatedTestCases);
+      
+      // Ensure each test case has the required properties
+      const normalizedTestCases = generatedTestCases.map(testCase => {
+        // If testCase is a string, convert it to an object with default properties
+        if (typeof testCase === 'string') {
+          return {
+            id: `TC-${Math.random().toString(36).substr(2, 5)}`,
+            title: testCase,
+            steps: ['Navigate to application', 'Verify functionality'],
+            expectedResult: 'Functionality works as expected'
+          };
+        }
+        
+        // Ensure test case has required properties
+        return {
+          id: testCase.id || `TC-${Math.random().toString(36).substr(2, 5)}`,
+          title: testCase.title || testCase.name || 'Test Case',
+          steps: Array.isArray(testCase.steps) ? testCase.steps : ['Verify functionality'],
+          expectedResult: testCase.expectedResult || 'Functionality works as expected'
+        };
+      });
+      
+      setTestCases(normalizedTestCases);
       
       // Notify parent component about new test cases
       if (onTestCasesUpdate) {
-        onTestCasesUpdate(generatedTestCases);
+        onTestCasesUpdate(normalizedTestCases);
       }
     } catch (err) {
       console.error('Error generating test cases:', err);
@@ -72,9 +95,6 @@ const TestCases = ({ functionalRequirements, onTestCasesUpdate }) => {
       {error && (
         <div className="error-message">
           <p>{error}</p>
-          {error.includes('rate limit') && (
-            <p className="rate-limit-note">The API service has reached its rate limit. Please try again in a few minutes.</p>
-          )}
           <button 
             className="retry-button" 
             onClick={generateTestCases}
@@ -88,11 +108,11 @@ const TestCases = ({ functionalRequirements, onTestCasesUpdate }) => {
         <div className="test-cases-list">
           {testCases.map((testCase, index) => (
             <div key={index} className="test-case-item">
-              <h3>{testCase.id}</h3>
+              <h3>{testCase.id || `Case ${index + 1}`}: {testCase.title}</h3>
               <div className="test-steps">
                 <strong>Steps:</strong>
                 <ol>
-                  {testCase.steps.map((step, stepIndex) => (
+                  {testCase.steps && testCase.steps.map((step, stepIndex) => (
                     <li key={stepIndex}>{step}</li>
                   ))}
                 </ol>
@@ -103,11 +123,14 @@ const TestCases = ({ functionalRequirements, onTestCasesUpdate }) => {
         </div>
       )}
       
-      {!loading && !error && testCases.length === 0 && (
+      {!loading && !error && !testCases.length && (
         <div className="empty-state">
           <p>No test cases generated yet.</p>
-          {functionalRequirements && functionalRequirements.length > 0 && (
-            <button className="generate-button" onClick={generateTestCases}>
+          {functionalRequirements?.length > 0 && (
+            <button 
+              className="generate-button" 
+              onClick={generateTestCases}
+            >
               Generate Test Cases
             </button>
           )}

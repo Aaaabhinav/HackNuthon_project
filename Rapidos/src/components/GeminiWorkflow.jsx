@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import './GeminiWorkflow.css';
 import RequirementsGenerator from './RequirementsGenerator';
 import ApplicationGenerator from './ApplicationGenerator';
 import TestCases from './TestCases';
