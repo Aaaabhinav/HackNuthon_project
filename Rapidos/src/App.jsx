@@ -11,20 +11,20 @@ function App() {
   const [blueprintData, setBlueprintData] = useState(null);
   const [copySuccess, setCopySuccess] = useState(false);
 
-  // Update URL and clear any error
+  // Update URL and clear error if any.
   const handleUrlChange = (e) => {
     setUrl(e.target.value);
     if (urlError) setUrlError(false);
   };
 
-  // Trigger analysis on Enter key
+  // Trigger analysis on Enter key press.
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       analyzeUrl();
     }
   };
 
-  // Basic URL validation
+  // Basic URL validation.
   const isValidUrl = (url) => {
     try {
       new URL(url);
@@ -34,7 +34,7 @@ function App() {
     }
   };
 
-  // Extract file key from different Figma URL formats
+  // Extract the file key from various Figma URL formats.
   const extractFileKey = (url) => {
     console.log('Extracting file key from URL:', url);
     const match = url.match(/figma\.com\/(file|design|board|proto|community\/file)\/([a-zA-Z0-9_-]+)/i);
@@ -52,16 +52,33 @@ function App() {
     throw new Error('Could not extract file key from URL');
   };
 
-  // Recursively filter each Figma node to include only required details
+  /**
+   * Recursively filter the Figma node to extract essential details.
+   * This function captures:
+   * 
+   * 1. Design Structure & Layout:
+   *    - Page/Frame hierarchy, names, dimensions (x, y, width, height)
+   *    - Constraints, auto-layout (layoutMode) and grid settings (layoutGrids)
+   * 2. Visual Elements & Styling:
+   *    - For TEXT: text content, font family, font size, font weight, line height, letter spacing, text alignment
+   *    - For shapes (RECTANGLE, ELLIPSE, POLYGON, STAR, VECTOR): corner radius, fills (colors), strokes, effects
+   *    - For IMAGE: image reference and scaling info.
+   * 3. Interactive Elements & User Flows:
+   *    - Prototype connections (if available) and interactions.
+   *    - For interactive components (buttons, form fields): overrides and states.
+   * 4. Data & Logic (Backend Considerations):
+   *    - Data placeholders (if text includes dynamic content markers).
+   *    - Component names that hint at API endpoints or form data.
+   */
   const filterFigmaNode = (node) => {
-    // Create a filtered node with the essential fields.
+    // Start with common properties.
     const filteredNode = {
       id: node.id,
       name: node.name,
-      type: node.type
+      type: node.type,
     };
 
-    // Include layout details if available.
+    // 1. Design Structure & Layout
     if (node.absoluteBoundingBox) {
       filteredNode.absoluteBoundingBox = {
         x: node.absoluteBoundingBox.x,
@@ -70,21 +87,91 @@ function App() {
         height: node.absoluteBoundingBox.height,
       };
     }
+    if (node.constraints) {
+      filteredNode.constraints = node.constraints;
+    }
+    if (node.layoutMode) {
+      filteredNode.layoutMode = node.layoutMode;
+      // You can also include alignment properties if needed.
+      filteredNode.primaryAxisAlignItems = node.primaryAxisAlignItems;
+      filteredNode.counterAxisAlignItems = node.counterAxisAlignItems;
+    }
+    if (node.layoutGrids) {
+      filteredNode.layoutGrids = node.layoutGrids;
+    }
 
-    // For text nodes, include characters and minimal style info.
+    // 2. Visual Elements & Styling
     if (node.type === 'TEXT') {
       filteredNode.characters = node.characters || '';
       if (node.style) {
         filteredNode.style = {
-          fontSize: node.style.fontSize,
           fontFamily: node.style.fontFamily,
+          fontSize: node.style.fontSize,
           fontWeight: node.style.fontWeight,
-          lineHeightPx: node.style.lineHeightPx
+          lineHeightPx: node.style.lineHeightPx,
+          letterSpacing: node.style.letterSpacing,
+          textAlign: node.style.textAlign, // May be 'LEFT', 'RIGHT', etc.
         };
+      }
+      // Detect potential data placeholders in text (e.g. {username})
+      if (node.characters && node.characters.match(/{\w+}/)) {
+        filteredNode.isPlaceholder = true;
       }
     }
 
-    // If the node has children, recursively filter them.
+    // For shapes (RECTANGLE, ELLIPSE, POLYGON, STAR, VECTOR)
+    if (['RECTANGLE', 'ELLIPSE', 'POLYGON', 'STAR', 'VECTOR'].includes(node.type)) {
+      if (node.cornerRadius !== undefined) {
+        filteredNode.cornerRadius = node.cornerRadius;
+      }
+      if (node.fills) {
+        filteredNode.fills = node.fills.map(fill => ({
+          type: fill.type,
+          visible: fill.visible,
+          color: fill.color ? fill.color : undefined,
+          gradientStops: fill.gradientStops ? fill.gradientStops : undefined,
+        }));
+      }
+      if (node.strokes) {
+        filteredNode.strokes = node.strokes.map(stroke => ({
+          type: stroke.type,
+          color: stroke.color,
+        }));
+      }
+      if (node.effects) {
+        filteredNode.effects = node.effects; // Includes shadows, blurs, etc.
+      }
+    }
+
+    // For images.
+    if (node.type === 'IMAGE') {
+      filteredNode.imageRef = node.imageRef || null;
+      filteredNode.scaleFactor = node.scaleFactor || undefined;
+    }
+
+    // 3. Interactive Elements & User Flows
+    // Capture prototype connections & interactions if present.
+    if (node.prototypeNodeID || node.interactions) {
+      filteredNode.prototypeConnections = node.prototypeNodeID
+        ? [node.prototypeNodeID]
+        : [];
+      if (node.interactions) {
+        filteredNode.interactions = node.interactions;
+      }
+    }
+    // For interactive components, capture overrides (commonly on instances or components).
+    if (node.type === 'INSTANCE' || node.type === 'COMPONENT') {
+      filteredNode.overrides = node.overrides || null;
+    }
+
+    // 4. Data & Logic (Backend Considerations)
+    // Include the node name which may hint at API endpoints (e.g., "user list", "login form").
+    // For form fields, the name may be used to infer input types.
+    if (node.name) {
+      filteredNode.inferredFunction = node.name.toLowerCase();
+    }
+
+    // Recursively filter children nodes to maintain layer hierarchy.
     if (node.children && node.children.length > 0) {
       filteredNode.children = node.children.map(child => filterFigmaNode(child));
     }
@@ -92,7 +179,7 @@ function App() {
     return filteredNode;
   };
 
-  // Fetch Figma file and filter the response to only include blueprint details.
+  // Fetch Figma file and apply the deep filter to generate a detailed design blueprint.
   const fetchFigmaFile = async (fileKey) => {
     try {
       console.log('Fetching Figma file with key:', fileKey);
@@ -122,12 +209,12 @@ function App() {
 
       const data = await response.json();
 
-      // Filter the document recursively.
+      // Filter the entire document recursively with the additional design details.
       const filteredDocument = filterFigmaNode(data.document);
 
-      // Construct the blueprint JSON for the generative AI model.
+      // Build the blueprint JSON for further processing by a generative AI.
       const blueprint = {
-        document: filteredDocument
+        document: filteredDocument,
       };
 
       console.log('Blueprint data prepared:', blueprint);
@@ -138,7 +225,7 @@ function App() {
     }
   };
 
-  // For non-Figma URLs, fetch generic content (if needed for other purposes)
+  // For non-Figma URLs, fetch generic content (if needed).
   const fetchGenericUrl = async (url) => {
     try {
       console.log('Fetching generic URL:', url);
@@ -169,7 +256,7 @@ function App() {
     }
   };
 
-  // Analyze the URL: if Figma URL, fetch and filter its data; otherwise, handle generic content.
+  // Analyze the URL: if it's a Figma URL, fetch and filter its data; otherwise, handle generic content.
   const analyzeUrl = () => {
     const trimmedUrl = url.trim();
     if (!isValidUrl(trimmedUrl)) {
@@ -185,7 +272,7 @@ function App() {
         const fileKey = extractFileKey(trimmedUrl);
         fetchFigmaFile(fileKey)
           .then((blueprint) => {
-            // Blueprint is a minimal JSON object representing the design.
+            // Display the design blueprint JSON.
             setBlueprintData(JSON.stringify(blueprint, null, 2));
             setIsLoading(false);
           })
@@ -200,7 +287,7 @@ function App() {
         setIsLoading(false);
       }
     } else {
-      // For non-Figma URLs, use the generic fetch (if needed)
+      // For non-Figma URLs, use the generic fetch (if needed).
       fetchGenericUrl(trimmedUrl)
         .then((data) => {
           const structure = {
@@ -219,7 +306,7 @@ function App() {
     }
   };
 
-  // Copy blueprint JSON to clipboard
+  // Copy the blueprint JSON to the clipboard.
   const handleCopyBlueprint = () => {
     if (blueprintData && navigator.clipboard) {
       navigator.clipboard.writeText(blueprintData)
@@ -237,7 +324,7 @@ function App() {
     <div className="app">
       <header>
         <h1>Rapidos</h1>
-        <p>Analyze Figma URLs and generate a design blueprint for full‑stack development</p>
+        <p>Analyze Figma URLs and generate a detailed design blueprint for full‑stack development</p>
       </header>
       <main>
         <div className="url-input">
