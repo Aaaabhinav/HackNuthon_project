@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import './App.css';
 
 // Insert your Figma API key here
-const FIGMA_API_KEY = '';
+const FIGMA_API_KEY = 'figd_IBAmJi0BxWUtMQPcVqfFLGco9eOsjbO8mR380lag';
 
 function App() {
   const [url, setUrl] = useState('');
