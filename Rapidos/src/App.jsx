@@ -2,8 +2,8 @@ import { useState } from 'react';
 import './App.css';
 import GeminiWorkflow from './components/GeminiWorkflow';
 
-// Figma API token
-const FIGMA_API_TOKEN = 'figd_IBAmJi0BxWUtMQPcVqfFLGco9eOsjbO8mR380lag';
+// Default Figma API token (you can change this if needed)
+const DEFAULT_FIGMA_API_TOKEN = 'figd_IBAmJi0BxWUtMQPcVqfFLGco9eOsjbO8mR380lag';
 
 function App() {
   const [url, setUrl] = useState('');
@@ -13,6 +13,8 @@ function App() {
   const [copySuccess, setCopySuccess] = useState(false);
   const [parsedBlueprint, setParsedBlueprint] = useState(null);
   const [activeTab, setActiveTab] = useState('blueprint'); // 'blueprint' or 'workflow'
+  const [figmaApiToken, setFigmaApiToken] = useState(DEFAULT_FIGMA_API_TOKEN);
+  const [showApiSettings, setShowApiSettings] = useState(false);
 
   // Update URL and clear error if any.
   const handleUrlChange = (e) => {
@@ -192,7 +194,7 @@ function App() {
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
-          'X-Figma-Token': FIGMA_API_TOKEN,
+          'X-Figma-Token': figmaApiToken,
         },
       });
 
@@ -327,12 +329,43 @@ function App() {
     }
   };
 
+  // Toggle API settings display
+  const toggleApiSettings = () => {
+    setShowApiSettings(!showApiSettings);
+  };
+
   return (
     <div className="app">
       <header>
         <h1>Rapidos</h1>
-        <p>Analyze Figma URLs and generate a full-stack application with testing</p>
+        <p>AI-powered application generator from Figma designs</p>
+        <button 
+          className="api-settings-button" 
+          onClick={toggleApiSettings}
+          title="Configure Figma API Token"
+        >
+          ⚙️ Figma API Settings
+        </button>
       </header>
+
+      {showApiSettings && (
+        <div className="api-settings-panel">
+          <h2>Figma API Configuration</h2>
+          <div className="api-input-group">
+            <label htmlFor="figma-api-token">Figma API Token:</label>
+            <input
+              id="figma-api-token"
+              type="password"
+              value={figmaApiToken}
+              onChange={(e) => setFigmaApiToken(e.target.value)}
+              placeholder="Enter your Figma API token"
+            />
+            <small>Used for accessing Figma designs</small>
+          </div>
+          <button className="close-settings" onClick={toggleApiSettings}>Close Settings</button>
+        </div>
+      )}
+
       <main>
         <div className="url-input">
           <div className="input-group">
@@ -344,7 +377,11 @@ function App() {
               placeholder="Enter a Figma URL to analyze and build an application"
               className={urlError ? 'error' : ''}
             />
-            <button onClick={analyzeUrl} disabled={isLoading}>
+            <button 
+              onClick={analyzeUrl} 
+              disabled={isLoading}
+              className="analyze-button"
+            >
               {isLoading ? 'Analyzing...' : 'Analyze'}
             </button>
           </div>
@@ -353,6 +390,7 @@ function App() {
 
         {isLoading && (
           <div className="loading">
+            <div className="spinner"></div>
             <p>Analyzing URL data...</p>
           </div>
         )}
@@ -386,15 +424,21 @@ function App() {
                   {copySuccess ? 'Copied!' : 'Copy'}
                 </button>
               </h2>
-              <pre>{blueprintData}</pre>
+              <pre className="blueprint-json">{blueprintData}</pre>
             </div>
           </div>
         )}
 
         {!isLoading && parsedBlueprint && activeTab === 'workflow' && (
-          <GeminiWorkflow figmaBlueprint={parsedBlueprint} />
+          <GeminiWorkflow 
+            figmaBlueprint={parsedBlueprint} 
+          />
         )}
       </main>
+
+      <footer>
+        <p>Rapidos • AI-powered Rapid Application Development • &copy; {new Date().getFullYear()}</p>
+      </footer>
     </div>
   );
 }

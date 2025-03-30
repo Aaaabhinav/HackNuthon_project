@@ -1,8 +1,16 @@
 import axios from 'axios';
 
-// Replace this with your actual Gemini API key
-const GEMINI_API_KEY = 'AIzaSyCKlzvue7-sXoEr32rkLLgxgIv9PwGk1h4';
-// Updated API URL to use latest version
+// Individual API keys for each type of API call
+const API_KEYS = {
+  requirements: '#1',
+  application: '#2',
+  testCases: '#3',
+  testScenarios: '#4',
+  testCode: '#5',
+  testReport: '#6'
+};
+
+// Gemini API URL
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent';
 
 // Function to truncate and simplify the Figma blueprint to reduce size
@@ -52,14 +60,16 @@ const prepareFigmaBlueprint = (figmaBlueprint) => {
 };
 
 const ApiService = {
-  // Call Gemini API with proper headers and formatting
-  callGeminiApi: async (prompt, temperature = 0.7, maxOutputTokens = 1024) => {
+  // Call Gemini API with proper headers and formatting - using the specified API key
+  callGeminiApi: async (prompt, temperature = 0.7, maxOutputTokens = 1024, apiKeyType = 'requirements') => {
     try {
-      console.log(`Calling Gemini API with prompt length: ${prompt.length} chars`);
+      // Use the specified API key for this type of call
+      const apiKey = API_KEYS[apiKeyType];
+      console.log(`Calling Gemini API for ${apiKeyType} with prompt length: ${prompt.length} chars`);
       
-      // Updated request payload format to match the latest Gemini API requirements
+      // Request payload format for Gemini API
       const response = await axios.post(
-        `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
+        `${GEMINI_API_URL}?key=${apiKey}`,
         {
           contents: [
             {
@@ -110,6 +120,11 @@ const ApiService = {
         throw new Error('Unexpected response structure from Gemini API');
       }
     } catch (error) {
+      // Handle specific API errors
+      if (error.response && error.response.status === 429) {
+        throw new Error(`Rate limit reached for ${apiKeyType} API key. Please try again later.`);
+      }
+      
       console.error('Error calling Gemini API:', error.response ? error.response.data : error.message);
       throw new Error(`Failed to call Gemini API: ${error.message}`);
     }
@@ -146,7 +161,7 @@ const ApiService = {
 ${simplifiedBlueprint}
     `;
 
-    const response = await ApiService.callGeminiApi(prompt, 0.8, 2048);
+    const response = await ApiService.callGeminiApi(prompt, 0.8, 2048, 'requirements');
     console.log('Requirements response:', response.substring(0, 500) + '...');
     
     // More flexible parsing to extract requirements in various formats
@@ -192,179 +207,225 @@ ${simplifiedBlueprint}
     }
     
     // Return results, with fallback to ensure we always return something
-    return requirements.length > 0 ? requirements : [
-      "The system shall provide a user interface based on the Figma design.",
-      "The system shall implement all visual elements shown in the design.",
-      "The system shall be responsive and adapt to different screen sizes.",
-      "The system shall handle user interactions as implied by the design elements."
-    ];
+    return requirements.length > 0 ? requirements : ["The system should implement all functionality visible in the design."];
   },
 
   // Generate complete application code (frontend + backend)
   generateApplication: async (figmaBlueprint, requirements) => {
-    // Prepare a simplified version of the blueprint
     const simplifiedBlueprint = prepareFigmaBlueprint(figmaBlueprint);
     
+    const formattedRequirements = requirements.map((req, index) => `${index + 1}. ${req}`).join('\n');
+    
     const prompt = `
-      You are a full-stack developer creating a complete web application based on a Figma design and a set of requirements.
+      You are an expert full-stack developer who specializes in creating web applications from designs. Your task is to generate the code for a complete application based on a Figma design blueprint and functional requirements.
       
-      Figma Design Blueprint (simplified):
+      Generate a complete and working React-based frontend and any necessary backend code. Include all necessary HTML, CSS, and JavaScript.
+      
+      Here is the simplified Figma design blueprint:
 ${simplifiedBlueprint}
-      
-      Functional Requirements:
-${requirements.join('\n')}
-      
-      Generate a complete, standalone web application that includes:
-      1. Frontend HTML structure with proper semantic elements
-      2. CSS styling using Tailwind classes for responsive design
-      3. JavaScript for frontend interactivity 
-      4. A minimal backend (server code, routing, and data handling)
-      5. All in a single HTML file using script and style tags
-      
-      The application should be fully functional according to the requirements, with clean code organization and comments.
-      Use Tailwind CSS for styling and make the application responsive.
-      
-      Format your response as a complete HTML file ready to run, with embedded script and style tags.
-    `;
 
-    return await ApiService.callGeminiApi(prompt, 0.7, 8192);
+      And here are the functional requirements:
+${formattedRequirements}
+
+      Create a modern, responsive implementation with best practices. Include:
+      1. Component structure and organization
+      2. Styling (using CSS or a framework like Tailwind)
+      3. State management
+      4. API endpoints (if needed)
+      5. Data models
+      
+      Return ONLY the code with no explanations. The code should be complete, functional, and ready to deploy.
+    `;
+    
+    return await ApiService.callGeminiApi(prompt, 0.7, 8192, 'application');
   },
 
   // Generate test cases from functional requirements
   generateTestCases: async (requirements) => {
+    // Format the requirements as a numbered list for clarity
+    const formattedRequirements = requirements.map((req, index) => `${index + 1}. ${req}`).join('\n');
+    
     const prompt = `
-      You are a QA engineer. Based on these functional requirements, generate comprehensive test cases.
+      You are an expert QA specialist. Your task is to generate comprehensive test cases for a web application based on a set of functional requirements.
       
-      For each requirement, create at least one test case with:
-      - Test case ID
-      - Test case name 
-      - Description
-      - Test steps (numbered list)
-      - Expected result
-      - Priority (High, Medium, Low)
-      
-      Functional Requirements:
-${requirements.join('\n')}
-    `;
+      Here are the functional requirements for the application:
+${formattedRequirements}
 
-    const response = await ApiService.callGeminiApi(prompt, 0.7, 4096);
+      Generate at least 8-12 test cases that thoroughly validate these requirements. For each test case, provide:
+      1. A unique ID (TC-XXX format)
+      2. A clear list of steps to perform
+      3. The expected result
+      
+      Present your response as a JSON array where each object has the following properties:
+      - id: string (the unique test case ID)
+      - steps: array of strings (the test steps)
+      - expectedResult: string (what should happen if the test passes)
+      
+      Example format:
+      [{
+        "id": "TC-001",
+        "steps": ["Navigate to login page", "Enter valid credentials", "Click login button"],
+        "expectedResult": "User should be successfully logged in and redirected to dashboard"
+      }]
+      
+      Make your test cases specific, actionable, and thorough. Cover happy paths, edge cases, and error scenarios.
+    `;
     
-    // Parse the response into structured test cases
-    // This is a simplified parsing approach - in a real app you'd want more robust parsing
-    const testCaseBlocks = response.split(/Test Case ID:/).slice(1);
+    const response = await ApiService.callGeminiApi(prompt, 0.7, 4096, 'testCases');
+    console.log('Test cases response received, processing...');
     
-    return testCaseBlocks.map(block => {
-      const lines = block.split('\n').filter(line => line.trim());
+    try {
+      // Find JSON in the response (it might have additional text before/after)
+      let jsonMatch = response.match(/\[\s*\{.*\}\s*\]/s);
+      let parsedTestCases;
       
-      // Basic parsing - could be improved with regex
-      const id = lines[0].trim();
-      const name = lines.find(l => l.includes('Name:'))?.replace('Name:', '').trim() || '';
-      const description = lines.find(l => l.includes('Description:'))?.replace('Description:', '').trim() || '';
+      if (jsonMatch) {
+        parsedTestCases = JSON.parse(jsonMatch[0]);
+      } else {
+        // Try to extract JSON from markdown code blocks
+        jsonMatch = response.match(/```(?:json)?\s*\n?(\[\s*\{.*\}\s*\])\s*\n?```/s);
+        if (jsonMatch) {
+          parsedTestCases = JSON.parse(jsonMatch[1]);
+        } else {
+          throw new Error('Could not extract JSON test cases from response');
+        }
+      }
       
-      // Get steps between Steps: and Expected Result:
-      const stepsStartIndex = lines.findIndex(l => l.includes('Steps:'));
-      const expectedStartIndex = lines.findIndex(l => l.includes('Expected Result:'));
-      const steps = lines.slice(stepsStartIndex + 1, expectedStartIndex)
-        .map(step => step.trim())
-        .filter(step => step);
-      
-      const expectedResult = lines.find(l => l.includes('Expected Result:'))?.replace('Expected Result:', '').trim() || '';
-      const priority = lines.find(l => l.includes('Priority:'))?.replace('Priority:', '').trim() || 'Medium';
-      
-      return { id, name, description, steps, expectedResult, priority };
-    });
+      return parsedTestCases;
+    } catch (error) {
+      console.error('Error parsing test cases:', error);
+      // Fallback: generate some basic test cases
+      return requirements.map((req, index) => ({
+        id: `TC-${String(index + 1).padStart(3, '0')}`,
+        steps: ["Navigate to the relevant page", "Perform the required action", "Verify the response"],
+        expectedResult: `The system successfully implements: ${req}`
+      }));
+    }
   },
 
   // Generate test scenarios from test cases and application code
   generateTestScenarios: async (testCases, applicationCode) => {
-    // Truncate application code if too large
-    const truncatedCode = applicationCode.length > 5000 ? 
-      applicationCode.substring(0, 5000) + '...[truncated for brevity]' : 
-      applicationCode;
+    // Format the test cases for the prompt
+    const formattedTestCases = JSON.stringify(testCases, null, 2);
+    
+    // Create a condensed version of the app code to avoid token limits
+    const condensedCode = applicationCode.substring(0, 15000); // Limit to avoid token limits
     
     const prompt = `
-      You are a test architect. Based on these test cases and the application code, generate comprehensive test scenarios.
-      Each test scenario should validate an entire workflow or user journey through the application.
+      You are an expert QA engineer specializing in test scenario design. Your task is to generate comprehensive test scenarios based on test cases and application code.
       
-      Test Cases:
-${JSON.stringify(testCases, null, 2)}
-      
-      Application Code (truncated):
-${truncatedCode}
-      
-      For each scenario, include:
-      - Scenario ID and name
-      - Description of the workflow being tested
-      - Preconditions
-      - Scenario steps (which may include multiple test cases)
-      - Expected outcome
-      - Test data required
-    `;
+      Here are the test cases:
+${formattedTestCases}
 
-    const response = await ApiService.callGeminiApi(prompt, 0.7, 4096);
+      Here is a portion of the application code:
+${condensedCode}
+
+      Create at least 5-8 detailed test scenarios that cover important user flows through the application. Each scenario should:
+      1. Test a complete user journey or workflow
+      2. Include multiple steps that connect related test cases
+      3. Have clear preconditions and expected outcomes
+      
+      Present your response as a JSON array with each object having these properties:
+      - id: string (unique scenario ID in format TS-XXX)
+      - name: string (descriptive name of the scenario)
+      - description: string (brief overview of what this scenario tests)
+      - preconditions: string (setup required before running the scenario)
+      - steps: array of strings (detailed steps for the scenario)
+      - expectedOutcome: string (final result if the scenario passes)
+      - testData: string (optional, any test data needed)
+      
+      Make your scenarios comprehensive and reflective of real user behavior. Include both happy paths and edge cases.
+    `;
     
-    // Parse the response to extract scenarios
-    const scenarioBlocks = response.split(/Scenario ID:/).slice(1);
+    const response = await ApiService.callGeminiApi(prompt, 0.7, 4096, 'testScenarios');
+    console.log('Test scenarios response received, processing...');
     
-    return scenarioBlocks.map(block => {
-      const lines = block.split('\n').filter(line => line.trim());
+    try {
+      // Find JSON in the response (it might have additional text before/after)
+      let jsonMatch = response.match(/\[\s*\{.*\}\s*\]/s);
+      let parsedScenarios;
       
-      const id = lines[0].trim();
-      const name = lines.find(l => l.includes('Name:'))?.replace('Name:', '').trim() || '';
-      const description = lines.find(l => l.includes('Description:'))?.replace('Description:', '').trim() || '';
-      const preconditions = lines.find(l => l.includes('Preconditions:'))?.replace('Preconditions:', '').trim() || '';
+      if (jsonMatch) {
+        parsedScenarios = JSON.parse(jsonMatch[0]);
+      } else {
+        // Try to extract JSON from markdown code blocks
+        jsonMatch = response.match(/```(?:json)?\s*\n?(\[\s*\{.*\}\s*\])\s*\n?```/s);
+        if (jsonMatch) {
+          parsedScenarios = JSON.parse(jsonMatch[1]);
+        } else {
+          throw new Error('Could not extract JSON test scenarios from response');
+        }
+      }
       
-      // Get steps between Steps: and Expected Outcome:
-      const stepsStartIndex = lines.findIndex(l => l.includes('Steps:'));
-      const outcomeStartIndex = lines.findIndex(l => l.includes('Expected Outcome:'));
-      const steps = stepsStartIndex >= 0 && outcomeStartIndex >= 0 ? 
-        lines.slice(stepsStartIndex + 1, outcomeStartIndex)
-          .map(step => step.trim())
-          .filter(step => step) : [];
+      return parsedScenarios;
+    } catch (error) {
+      console.error('Error parsing test scenarios:', error);
+      // Fallback: generate basic scenarios from test cases
+      const scenarios = [];
+      const groupSize = Math.max(1, Math.ceil(testCases.length / 5)); // Group test cases into ~5 scenarios
       
-      const expectedOutcome = lines.find(l => l.includes('Expected Outcome:'))?.replace('Expected Outcome:', '').trim() || '';
-      const testData = lines.find(l => l.includes('Test Data:'))?.replace('Test Data:', '').trim() || '';
+      for (let i = 0; i < testCases.length; i += groupSize) {
+        const scenarioTestCases = testCases.slice(i, i + groupSize);
+        scenarios.push({
+          id: `TS-${String(Math.floor(i / groupSize) + 1).padStart(3, '0')}`,
+          name: `Basic Scenario ${Math.floor(i / groupSize) + 1}`,
+          description: `Tests functionality from test cases ${scenarioTestCases[0].id} to ${scenarioTestCases[scenarioTestCases.length - 1].id}`,
+          preconditions: "User is logged in and has necessary permissions",
+          steps: scenarioTestCases.flatMap(tc => tc.steps),
+          expectedOutcome: "All tests pass successfully",
+          testData: "N/A"
+        });
+      }
       
-      return { id, name, description, preconditions, steps, expectedOutcome, testData };
-    });
+      return scenarios;
+    }
   },
 
   // Generate test code for automated testing
   generateTestCode: async (testScenarios, framework = 'cypress') => {
+    // Format the test scenarios for the prompt
+    const formattedScenarios = JSON.stringify(testScenarios, null, 2);
+    
     const prompt = `
-      You are a QA automation engineer. Generate automated test code for the ${framework} framework based on these test scenarios:
+      You are an expert test automation engineer. Your task is to convert test scenarios into automated test code using ${framework.charAt(0).toUpperCase() + framework.slice(1)}.
       
-      Test Scenarios:
-${JSON.stringify(testScenarios, null, 2)}
-      
-      Create comprehensive test suites that cover all the scenarios. Include proper setup, assertions, and teardown.
-      Use best practices for the ${framework} framework including page objects if appropriate.
-      Make sure the tests are maintainable and robust.
-    `;
+      Here are the test scenarios to automate:
+${formattedScenarios}
 
-    return await ApiService.callGeminiApi(prompt, 0.7, 8192);
+      Generate complete, runnable ${framework} test code that implements these scenarios. Include:
+      1. All necessary imports and setup
+      2. Page objects or helper functions as needed
+      3. Assertions to verify expected outcomes
+      4. Proper error handling and reporting
+      
+      Make the code clean, maintainable, and following best practices for ${framework}. The code should be ready to run without major modifications.
+    `;
+    
+    return await ApiService.callGeminiApi(prompt, 0.7, 4096, 'testCode');
   },
 
   // Generate a final report based on test results
   generateTestReport: async (testResults) => {
+    // Format the test results for the prompt
+    const formattedResults = JSON.stringify(testResults, null, 2);
+    
     const prompt = `
-      As a QA manager, create a detailed test report based on these test results:
+      You are an expert QA manager preparing a final test report for stakeholders. Your task is to analyze test results and create a comprehensive report.
       
-      Test Results:
-${JSON.stringify(testResults, null, 2)}
-      
-      Include:
-      1. Executive summary
-      2. Test coverage statistics
-      3. Passed/failed test breakdown
-      4. Critical issues found
-      5. Recommendations for fixes
-      6. Certification status (whether the app is ready for deployment)
-      
-      Format the report in a professional manner with clear sections and bullet points where appropriate.
-    `;
+      Here are the raw test results:
+${formattedResults}
 
-    return await ApiService.callGeminiApi(prompt, 0.7, 4096);
+      Generate a detailed test report that includes:
+      1. Executive summary (with pass rate and overall assessment)
+      2. Critical issues found (prioritized list of failed tests)
+      3. Recommendations for fixing issues
+      4. Readiness assessment (whether the application is ready for deployment)
+      5. Next steps (what should be done before release)
+      
+      Format the report in a professional manner suitable for presentation to technical and non-technical stakeholders.
+    `;
+    
+    return await ApiService.callGeminiApi(prompt, 0.7, 4096, 'testReport');
   }
 };
 

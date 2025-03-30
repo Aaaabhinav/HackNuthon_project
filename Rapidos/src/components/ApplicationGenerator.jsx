@@ -31,7 +31,7 @@ const ApplicationGenerator = ({ figmaBlueprint, requirements, onApplicationGener
       }
     } catch (err) {
       console.error('Error generating application:', err);
-      setError('Failed to generate application code. Please try again.');
+      setError(`Failed to generate application code: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -75,13 +75,31 @@ const ApplicationGenerator = ({ figmaBlueprint, requirements, onApplicationGener
         </div>
       </h2>
       
-      {loading && <div className="loading">Generating application code...</div>}
+      {loading && (
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>Generating application code...</p>
+        </div>
+      )}
       
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message">
+          <p>{error}</p>
+          {error.includes('rate limit') && (
+            <p className="rate-limit-note">The API service has reached its rate limit. Please try again in a few minutes.</p>
+          )}
+          <button 
+            className="retry-button" 
+            onClick={generateApplication}
+          >
+            Retry
+          </button>
+        </div>
+      )}
       
       {!loading && !error && showCode && applicationCode && (
         <div className="code-container">
-          <pre>{applicationCode}</pre>
+          <pre className="application-code">{applicationCode}</pre>
         </div>
       )}
       

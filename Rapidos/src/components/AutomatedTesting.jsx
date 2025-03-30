@@ -28,7 +28,7 @@ const AutomatedTesting = ({ testScenarios, applicationCode, onTestingComplete })
       setTestCode(generatedTestCode);
     } catch (err) {
       console.error('Error generating test code:', err);
-      setError('Failed to generate test code. Please try again.');
+      setError(`Failed to generate test code: ${err.message}`);
     } finally {
       setGenerating(false);
     }
@@ -52,7 +52,7 @@ const AutomatedTesting = ({ testScenarios, applicationCode, onTestingComplete })
       }
     } catch (err) {
       console.error('Error running tests:', err);
-      setError('Failed to run automated tests. Please try again.');
+      setError(`Failed to run automated tests: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -116,9 +116,11 @@ const AutomatedTesting = ({ testScenarios, applicationCode, onTestingComplete })
     <div className="section">
       <h2>
         Automated Testing
-        <button className="toggle-button" onClick={toggleCodeVisibility}>
-          {showCode ? 'Hide' : 'Show'}
-        </button>
+        <div className="button-group">
+          <button className="toggle-button" onClick={toggleCodeVisibility}>
+            {showCode ? 'Hide' : 'Show'}
+          </button>
+        </div>
       </h2>
       
       <div className="framework-selector">
@@ -144,15 +146,38 @@ const AutomatedTesting = ({ testScenarios, applicationCode, onTestingComplete })
         )}
       </div>
       
-      {generating && <div className="loading">Generating test code...</div>}
-      {loading && <div className="loading">Running automated tests...</div>}
+      {generating && (
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>Generating test code...</p>
+        </div>
+      )}
+      {loading && (
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>Running automated tests...</p>
+        </div>
+      )}
       
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message">
+          <p>{error}</p>
+          {error.includes('rate limit') && (
+            <p className="rate-limit-note">Note: You can add your own Gemini API key in the API Settings to avoid rate limiting.</p>
+          )}
+          <button 
+            className="retry-button" 
+            onClick={generating ? generateTestCode : runTests}
+          >
+            Retry
+          </button>
+        </div>
+      )}
       
       {!generating && !loading && showCode && testCode && (
         <div className="code-container">
           <h3>Generated {testingFramework.charAt(0).toUpperCase() + testingFramework.slice(1)} Test Code</h3>
-          <pre>{testCode}</pre>
+          <pre className="test-code">{testCode}</pre>
         </div>
       )}
       

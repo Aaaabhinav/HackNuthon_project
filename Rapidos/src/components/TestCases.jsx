@@ -9,19 +9,19 @@ const TestCases = ({ functionalRequirements, onTestCasesUpdate }) => {
 
   useEffect(() => {
     if (functionalRequirements && functionalRequirements.length > 0) {
-      generateTestCases(functionalRequirements);
+      generateTestCases();
     }
   }, [functionalRequirements]);
 
-  const generateTestCases = async (requirements) => {
-    if (!requirements || requirements.length === 0) return;
+  const generateTestCases = async () => {
+    if (!functionalRequirements || functionalRequirements.length === 0) return;
     
     setLoading(true);
     setError(null);
     
     try {
       // Call Gemini API to generate test cases based on requirements
-      const generatedTestCases = await ApiService.generateTestCases(requirements);
+      const generatedTestCases = await ApiService.generateTestCases(functionalRequirements);
       setTestCases(generatedTestCases);
       
       // Notify parent component about new test cases
@@ -30,31 +30,10 @@ const TestCases = ({ functionalRequirements, onTestCasesUpdate }) => {
       }
     } catch (err) {
       console.error('Error generating test cases:', err);
-      setError('Failed to generate test cases. Please try again.');
+      setError(`Failed to generate test cases: ${err.message}`);
     } finally {
       setLoading(false);
     }
-  };
-
-  const getPriority = (index, total) => {
-    if (index < Math.ceil(total * 0.3)) return 'High';
-    if (index < Math.ceil(total * 0.7)) return 'Medium';
-    return 'Low';
-  };
-
-  const generateStepsForRequirement = (requirement) => {
-    // Generate placeholder steps based on the requirement
-    const baseSteps = [
-      'Navigate to the relevant section',
-      'Perform the required action',
-      'Verify the expected outcome'
-    ];
-    
-    return baseSteps;
-  };
-
-  const generateExpectedResult = (requirement) => {
-    return `The system successfully performs the required function: ${requirement.substring(0, 100)}${requirement.length > 100 ? '...' : ''}`;
   };
 
   const toggleTestCases = () => {
@@ -63,7 +42,7 @@ const TestCases = ({ functionalRequirements, onTestCasesUpdate }) => {
 
   const regenerateTestCases = () => {
     if (functionalRequirements && functionalRequirements.length > 0) {
-      generateTestCases(functionalRequirements);
+      generateTestCases();
     }
   };
 
@@ -71,26 +50,45 @@ const TestCases = ({ functionalRequirements, onTestCasesUpdate }) => {
     <div className="section">
       <h2>
         Test Cases
-        <button className="toggle-button" onClick={toggleTestCases}>
-          {showTestCases ? 'Hide' : 'Show'}
-        </button>
-        {testCases.length > 0 && (
-          <button className="regenerate-button" onClick={regenerateTestCases}>
-            Regenerate
+        <div className="button-group">
+          <button className="toggle-button" onClick={toggleTestCases}>
+            {showTestCases ? 'Hide' : 'Show'}
           </button>
-        )}
+          {testCases.length > 0 && (
+            <button className="regenerate-button" onClick={regenerateTestCases}>
+              Regenerate
+            </button>
+          )}
+        </div>
       </h2>
       
-      {loading && <div className="loading">Generating test cases...</div>}
+      {loading && (
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>Generating test cases...</p>
+        </div>
+      )}
       
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message">
+          <p>{error}</p>
+          {error.includes('rate limit') && (
+            <p className="rate-limit-note">The API service has reached its rate limit. Please try again in a few minutes.</p>
+          )}
+          <button 
+            className="retry-button" 
+            onClick={generateTestCases}
+          >
+            Retry
+          </button>
+        </div>
+      )}
       
       {!loading && !error && showTestCases && testCases.length > 0 && (
         <div className="test-cases-list">
           {testCases.map((testCase, index) => (
             <div key={index} className="test-case-item">
-              <h3>{testCase.id}: {testCase.name}</h3>
-              <p><strong>Description:</strong> {testCase.description}</p>
+              <h3>{testCase.id}</h3>
               <div className="test-steps">
                 <strong>Steps:</strong>
                 <ol>
@@ -100,7 +98,6 @@ const TestCases = ({ functionalRequirements, onTestCasesUpdate }) => {
                 </ol>
               </div>
               <p><strong>Expected Result:</strong> {testCase.expectedResult}</p>
-              <p><strong>Priority:</strong> <span className={`priority ${testCase.priority.toLowerCase()}`}>{testCase.priority}</span></p>
             </div>
           ))}
         </div>
@@ -110,7 +107,7 @@ const TestCases = ({ functionalRequirements, onTestCasesUpdate }) => {
         <div className="empty-state">
           <p>No test cases generated yet.</p>
           {functionalRequirements && functionalRequirements.length > 0 && (
-            <button className="generate-button" onClick={() => generateTestCases(functionalRequirements)}>
+            <button className="generate-button" onClick={generateTestCases}>
               Generate Test Cases
             </button>
           )}

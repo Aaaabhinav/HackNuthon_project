@@ -30,7 +30,7 @@ const TestScenarios = ({ testCases, applicationCode, onScenariosGenerated }) => 
       }
     } catch (err) {
       console.error('Error generating test scenarios:', err);
-      setError('Failed to generate test scenarios. Please try again.');
+      setError(`Failed to generate test scenarios: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -44,19 +44,39 @@ const TestScenarios = ({ testCases, applicationCode, onScenariosGenerated }) => 
     <div className="section">
       <h2>
         Test Scenarios
-        <button className="toggle-button" onClick={toggleScenarios}>
-          {showScenarios ? 'Hide' : 'Show'}
-        </button>
-        {scenarios.length > 0 && (
-          <button className="regenerate-button" onClick={generateScenarios}>
-            Regenerate
+        <div className="button-group">
+          <button className="toggle-button" onClick={toggleScenarios}>
+            {showScenarios ? 'Hide' : 'Show'}
           </button>
-        )}
+          {scenarios.length > 0 && (
+            <button className="regenerate-button" onClick={generateScenarios}>
+              Regenerate
+            </button>
+          )}
+        </div>
       </h2>
       
-      {loading && <div className="loading">Generating test scenarios...</div>}
+      {loading && (
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>Generating test scenarios...</p>
+        </div>
+      )}
       
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message">
+          <p>{error}</p>
+          {error.includes('rate limit') && (
+            <p className="rate-limit-note">Note: The API service has reached its rate limit. Please try again in a few minutes.</p>
+          )}
+          <button 
+            className="retry-button" 
+            onClick={generateScenarios}
+          >
+            Retry
+          </button>
+        </div>
+      )}
       
       {!loading && !error && showScenarios && scenarios.length > 0 && (
         <div className="scenarios-list">

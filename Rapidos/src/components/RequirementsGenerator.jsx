@@ -29,7 +29,7 @@ const RequirementsGenerator = ({ figmaBlueprint, onRequirementsGenerated }) => {
       }
     } catch (err) {
       console.error('Error generating requirements:', err);
-      setError('Failed to generate requirements. Please try again.');
+      setError(`Failed to generate requirements: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -39,9 +39,27 @@ const RequirementsGenerator = ({ figmaBlueprint, onRequirementsGenerated }) => {
     <div className="section">
       <h2>Functional Requirements</h2>
       
-      {loading && <div className="loading">Generating requirements...</div>}
+      {loading && (
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>Generating requirements...</p>
+        </div>
+      )}
       
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message">
+          <p>{error}</p>
+          {error.includes('rate limit') && (
+            <p className="rate-limit-note">The API service has reached its rate limit. Please try again in a few minutes.</p>
+          )}
+          <button 
+            className="retry-button" 
+            onClick={generateRequirements}
+          >
+            Retry
+          </button>
+        </div>
+      )}
       
       {!loading && !error && requirements.length > 0 && (
         <div className="requirements-list">

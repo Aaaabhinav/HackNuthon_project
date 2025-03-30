@@ -116,7 +116,9 @@ const GeminiWorkflow = ({ figmaBlueprint }) => {
           )}
           
           {currentStep >= 6 && testResults && (
-            <TestReport testResults={testResults} />
+            <TestReport 
+              testResults={testResults} 
+            />
           )}
           
           {workflowComplete && (

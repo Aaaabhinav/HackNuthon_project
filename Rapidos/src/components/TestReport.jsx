@@ -25,7 +25,7 @@ const TestReport = ({ testResults }) => {
       setReport(generatedReport);
     } catch (err) {
       console.error('Error generating test report:', err);
-      setError('Failed to generate test report. Please try again.');
+      setError(`Failed to generate test report: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -66,19 +66,48 @@ const TestReport = ({ testResults }) => {
     <div className="section test-report-section">
       <h2>
         Test Report
-        {report && (
-          <button 
-            className="copy-button" 
-            onClick={copyReport}
-          >
-            {reportCopied ? 'Copied!' : 'Copy'}
-          </button>
-        )}
+        <div className="button-group">
+          {report && (
+            <button 
+              className="copy-button" 
+              onClick={copyReport}
+            >
+              {reportCopied ? 'Copied!' : 'Copy'}
+            </button>
+          )}
+          {testResults && (
+            <button 
+              className="regenerate-button" 
+              onClick={generateReport}
+              disabled={loading}
+            >
+              Regenerate Report
+            </button>
+          )}
+        </div>
       </h2>
       
-      {loading && <div className="loading">Generating test report...</div>}
+      {loading && (
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>Generating test report...</p>
+        </div>
+      )}
       
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message">
+          <p>{error}</p>
+          {error.includes('rate limit') && (
+            <p className="rate-limit-note">Note: The API service has reached its rate limit. Please try again in a few minutes.</p>
+          )}
+          <button 
+            className="retry-button" 
+            onClick={generateReport}
+          >
+            Retry
+          </button>
+        </div>
+      )}
       
       {!loading && !error && testResults && (
         <div className="certification-status">
