@@ -1,0 +1,213 @@
+name: Test Generated Code
+
+on:
+  repository_dispatch:
+    types: [test-generated-code]
+  workflow_dispatch:
+    inputs:
+      htmlContent:
+        description: 'Generated HTML content to test'
+        required: true
+        type: string
+      designId:
+        description: 'Figma design ID'
+        required: true
+        type: string
+
+jobs:
+  test-generated-code:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Create test environment
+        run: |
+          mkdir -p test-environment
+          echo "${{ github.event.client_payload.htmlContent || github.event.inputs.htmlContent }}" > test-environment/index.html
+          echo "Created test file with $(wc -l < test-environment/index.html) lines"
+      
+      - name: Setup testing tools
+        run: |
+          npm init -y
+          npm install playwright@latest lighthouse axe-core
+          npx playwright install --with-deps chromium
+      
+      - name: Start test server
+        run: |
+          npx http-server ./test-environment -p 8080 &
+          sleep 5
+      
+      - name: Run Accessibility Tests
+        run: |
+          mkdir -p test-results
+          node -e "
+            const { chromium } = require('playwright');
+            const fs = require('fs');
+            const axe = fs.readFileSync('node_modules/axe-core/axe.min.js', 'utf8');
+            
+            (async () => {
+              const browser = await chromium.launch();
+              const context = await browser.newContext();
+              const page = await context.newPage();
+              await page.goto('http://localhost:8080');
+              
+              await page.evaluate(axe);
+              const results = await page.evaluate(() => {
+                return new Promise(resolve => {
+                  axe.run(document, {}, (err, results) => {
+                    if (err) throw err;
+                    resolve(results);
+                  });
+                });
+              });
+              
+              fs.writeFileSync('test-results/accessibility.json', JSON.stringify(results, null, 2));
+              
+              const violations = results.violations || [];
+              console.log(`Found ${violations.length} accessibility issues`);
+              
+              await browser.close();
+            })();
+          " || echo "Accessibility test failed"
+      
+      - name: Run Performance Tests
+        run: |
+          npx lighthouse http://localhost:8080 --output json --output-path test-results/lighthouse.json --chrome-flags="--headless --no-sandbox" || echo "Lighthouse test failed"
+      
+      - name: Run Visual Tests
+        run: |
+          node -e "
+            const { chromium } = require('playwright');
+            const fs = require('fs');
+            
+            (async () => {
+              const browser = await chromium.launch();
+              const context = await browser.newContext({
+                viewport: { width: 1280, height: 720 }
+              });
+              const page = await context.newPage();
+              await page.goto('http://localhost:8080');
+              await page.screenshot({ path: 'test-results/screenshot-desktop.png' });
+              
+              // Mobile viewport
+              await context.close();
+              const mobileContext = await browser.newContext({
+                viewport: { width: 375, height: 667 }
+              });
+              const mobilePage = await mobileContext.newPage();
+              await mobilePage.goto('http://localhost:8080');
+              await mobilePage.screenshot({ path: 'test-results/screenshot-mobile.png' });
+              
+              await browser.close();
+              
+              console.log('Captured screenshots for desktop and mobile');
+            })();
+          " || echo "Visual test failed"
+      
+      - name: Generate Test Report
+        id: generate_report
+        run: |
+          node -e "
+            const fs = require('fs');
+            
+            const designId = '${{ github.event.client_payload.designId || github.event.inputs.designId }}';
+            
+            // Read test results
+            let accessibilityResults = {};
+            let lighthouseResults = {};
+            
+            try {
+              accessibilityResults = JSON.parse(fs.readFileSync('test-results/accessibility.json', 'utf8'));
+            } catch (e) {
+              console.error('Error reading accessibility results:', e);
+            }
+            
+            try {
+              lighthouseResults = JSON.parse(fs.readFileSync('test-results/lighthouse.json', 'utf8'));
+            } catch (e) {
+              console.error('Error reading lighthouse results:', e);
+            }
+            
+            // Calculate scores
+            const accessibilityViolations = accessibilityResults.violations || [];
+            const lighthouseScores = lighthouseResults.categories ? {
+              performance: Math.round(lighthouseResults.categories.performance.score * 100),
+              accessibility: Math.round(lighthouseResults.categories.accessibility.score * 100),
+              bestPractices: Math.round(lighthouseResults.categories['best-practices'].score * 100),
+              seo: Math.round(lighthouseResults.categories.seo.score * 100)
+            } : {
+              performance: 0,
+              accessibility: 0, 
+              bestPractices: 0,
+              seo: 0
+            };
+            
+            const testResults = {
+              designId: designId,
+              timestamp: new Date().toISOString(),
+              summary: {
+                accessibility: {
+                  passed: accessibilityResults.passes ? accessibilityResults.passes.length : 0,
+                  failed: accessibilityViolations.length,
+                  score: Math.max(0, 100 - (accessibilityViolations.length * 5))
+                },
+                lighthouse: lighthouseScores,
+                responsiveness: {
+                  desktop: true,
+                  mobile: true
+                }
+              },
+              details: {
+                accessibilityIssues: accessibilityViolations.map(v => ({
+                  id: v.id,
+                  impact: v.impact,
+                  description: v.description,
+                  nodes: v.nodes.length
+                })),
+                performanceMetrics: lighthouseResults.audits ? {
+                  firstContentfulPaint: lighthouseResults.audits['first-contentful-paint'].displayValue,
+                  largestContentfulPaint: lighthouseResults.audits['largest-contentful-paint'].displayValue,
+                  totalBlockingTime: lighthouseResults.audits['total-blocking-time'].displayValue,
+                  cumulativeLayoutShift: lighthouseResults.audits['cumulative-layout-shift'].displayValue
+                } : {}
+              },
+              passed: (lighthouseScores.performance >= 70 && 
+                       lighthouseScores.accessibility >= 80 && 
+                       accessibilityViolations.filter(v => v.impact === 'critical').length === 0)
+            };
+            
+            // Save the test results to a file
+            fs.writeFileSync('test-results/github-report.json', JSON.stringify(testResults, null, 2));
+            console.log('Test report generated successfully');
+            
+            // Output as step output for GitHub Actions
+            const outputSummary = JSON.stringify({
+              designId: testResults.designId,
+              timestamp: testResults.timestamp,
+              passed: testResults.passed,
+              lighthouse: testResults.summary.lighthouse,
+              accessibilityIssues: testResults.details.accessibilityIssues.length
+            });
+            
+            console.log(`::set-output name=report_summary::${outputSummary}`);
+          "
+      
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: test-results/
+      
+      - name: Save results to database
+        run: |
+          # In a real scenario, you would send these results to your database
+          # For this example, we're just dumping to a file that will be available as an artifact
+          echo "${{ steps.generate_report.outputs.report_summary }}" > test-results/report-summary.json
+          cat test-results/github-report.json

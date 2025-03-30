@@ -47,6 +47,10 @@ const GeminiWorkflow = ({ figmaBlueprint }) => {
     setWorkflowComplete(true);
   };
 
+  // Extract Figma file key from the blueprint if available
+  const figmaFileKey = figmaBlueprint?.fileKey || 
+    (figmaBlueprint?.source?.match(/figma\.com\/(file|design|board|proto|community\/file)\/([a-zA-Z0-9_-]+)/i)?.[2] || '');
+
   return (
     <div className="gemini-workflow">
       <div className="workflow-steps">
@@ -118,7 +122,9 @@ const GeminiWorkflow = ({ figmaBlueprint }) => {
           
           {currentStep >= 6 && testResults && (
             <TestReport 
-              testResults={testResults} 
+              testResults={testResults}
+              generatedCode={applicationCode}
+              figmaFileKey={figmaFileKey}
             />
           )}
           

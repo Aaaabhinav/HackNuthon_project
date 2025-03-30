@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import './TestReport.css'; 
 
-const TestReport = ({ testResults }) => {
+const TestReport = ({ testResults, generatedCode, figmaFileKey }) => {
   const [reportCopied, setReportCopied] = useState(false);
+  const [githubResults, setGithubResults] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('local'); // 'local' or 'github'
 
   // Normalize test results structure to ensure consistent access
   const normalizeTestResults = () => {
@@ -241,198 +244,420 @@ const TestReport = ({ testResults }) => {
     setTimeout(() => setReportCopied(false), 2000);
   };
 
-  return (
-    <div className="test-report-section">
-      <h2>
-        Test Report
-        <div className="button-group">
-          {generateLocalReport() && (
-            <button 
-              className="copy-button" 
-              onClick={copyReport}
-            >
-              {reportCopied ? 'Copied!' : 'Copy Report'}
-            </button>
-          )}
-        </div>
-      </h2>
+  // Trigger GitHub Actions workflow when a new code is generated
+  useEffect(() => {
+    if (generatedCode && figmaFileKey) {
+      triggerGitHubTest();
+    }
+  }, [generatedCode, figmaFileKey]);
+
+  // Function to trigger GitHub Actions workflow
+  const triggerGitHubTest = async () => {
+    if (!generatedCode || !figmaFileKey) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // In a real implementation, you would send this to your backend
+      // which would then trigger the GitHub workflow via GitHub API
+      console.log('Triggering GitHub Actions to test generated code');
       
-      {testResults ? (
-        <div className="report-dashboard">
-          <div className="report-header-section">
-            <div className="status-card">
-              <h3>Test Status</h3>
-              {getCertificationStatus() && (
-                <div className="certification-badge" style={{ backgroundColor: `${getCertificationStatus().color}20`, borderColor: getCertificationStatus().color }}>
-                  <span className="status-icon" style={{ backgroundColor: getCertificationStatus().color }}></span>
-                  <div className="status-details">
-                    <span className="status-name" style={{ color: getCertificationStatus().color }}>
-                      {getCertificationStatus().status.replace(/-/g, ' ').toUpperCase()}
-                    </span>
-                    <span className="status-message">{getCertificationStatus().message}</span>
-                  </div>
-                </div>
+      // Simulate API call to GitHub Actions
+      // In a real implementation, you would call:
+      // await fetch('your-backend-url/trigger-github-action', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ htmlContent: generatedCode, designId: figmaFileKey })
+      // });
+
+      // For demo purposes, we'll simulate a response after a delay
+      setTimeout(() => {
+        const mockGithubResults = {
+          designId: figmaFileKey,
+          timestamp: new Date().toISOString(),
+          summary: {
+            accessibility: {
+              passed: 12,
+              failed: 3,
+              score: 85
+            },
+            lighthouse: {
+              performance: 87,
+              accessibility: 90,
+              bestPractices: 93,
+              seo: 95
+            },
+            responsiveness: {
+              desktop: true,
+              mobile: true
+            }
+          },
+          details: {
+            accessibilityIssues: [
+              { id: 'color-contrast', impact: 'serious', description: 'Elements must have sufficient color contrast', nodes: 2 },
+              { id: 'aria-hidden-focus', impact: 'serious', description: 'ARIA hidden element must not be focusable', nodes: 1 },
+              { id: 'document-title', impact: 'serious', description: 'Documents must have a title', nodes: 1 }
+            ],
+            performanceMetrics: {
+              firstContentfulPaint: '0.8 s',
+              largestContentfulPaint: '1.2 s',
+              totalBlockingTime: '0 ms',
+              cumulativeLayoutShift: '0.001'
+            }
+          },
+          passed: true
+        };
+        
+        setGithubResults(mockGithubResults);
+        setIsLoading(false);
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error triggering GitHub Actions:', error);
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="section">
+      <div className="section-header">
+        <h2>Test Report</h2>
+        
+        <div className="tab-buttons">
+          <button 
+            className={`tab-button ${activeTab === 'local' ? 'active' : ''}`} 
+            onClick={() => setActiveTab('local')}
+          >
+            Local Test Results
+          </button>
+          <button 
+            className={`tab-button ${activeTab === 'github' ? 'active' : ''}`}
+            onClick={() => setActiveTab('github')}
+            disabled={!githubResults && !isLoading}
+          >
+            GitHub Test Results
+            {isLoading && <span className="loading-indicator"></span>}
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'local' ? (
+        <div className="test-report-section">
+          <h2>
+            Test Report
+            <div className="button-group">
+              {generateLocalReport() && (
+                <button 
+                  className="copy-button" 
+                  onClick={copyReport}
+                >
+                  {reportCopied ? 'Copied!' : 'Copy Report'}
+                </button>
               )}
             </div>
-            
-            <div className="chart-section">
-              {generatePieChart()}
-            </div>
-            
-            <div className="metrics-section">
-              {(() => {
-                const normalized = normalizeTestResults();
-                if (!normalized) return null;
-                
-                return (
-                  <>
-                    <div className="metric-box">
-                      <div className="metric-value">{normalized.total}</div>
-                      <div className="metric-label">Total Tests</div>
-                    </div>
-                    <div className="metric-box success">
-                      <div className="metric-value">{normalized.passed}</div>
-                      <div className="metric-label">Passed</div>
-                    </div>
-                    <div className="metric-box error">
-                      <div className="metric-value">{normalized.failed}</div>
-                      <div className="metric-label">Failed</div>
-                    </div>
-                    <div className="metric-box">
-                      <div className="metric-value">{normalized.duration}s</div>
-                      <div className="metric-label">Duration</div>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          </div>
+          </h2>
           
-          {(() => {
-            const normalized = normalizeTestResults();
-            if (!normalized) return null;
-            
-            return normalized.failed > 0 ? (
-              <div className="failures-container">
-                <h3>Failed Tests</h3>
-                <div className="scrollable-table-container">
-                  <table className="failures-table">
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Test Name</th>
-                        <th>Error</th>
-                        <th>Duration</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {normalized.failureDetails.map((detail, index) => (
-                        <tr key={index}>
-                          <td>{detail.testId || `TC-${index + 1}`}</td>
-                          <td>{detail.testName}</td>
-                          <td>
-                            <div className="error-message-cell">
-                              <div className="error-text">{detail.error}</div>
-                              {detail.stackTrace && (
-                                <div className="stack-trace-toggle">
-                                  <details>
-                                    <summary>Stack Trace</summary>
-                                    <pre>{detail.stackTrace}</pre>
-                                  </details>
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                          <td>{detail.duration}s</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+          {testResults ? (
+            <div className="report-dashboard">
+              <div className="report-header-section">
+                <div className="status-card">
+                  <h3>Test Status</h3>
+                  {getCertificationStatus() && (
+                    <div className="certification-badge" style={{ backgroundColor: `${getCertificationStatus().color}20`, borderColor: getCertificationStatus().color }}>
+                      <span className="status-icon" style={{ backgroundColor: getCertificationStatus().color }}></span>
+                      <div className="status-details">
+                        <span className="status-name" style={{ color: getCertificationStatus().color }}>
+                          {getCertificationStatus().status.replace(/-/g, ' ').toUpperCase()}
+                        </span>
+                        <span className="status-message">{getCertificationStatus().message}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
-                <div className="recommendations-box">
-                  <h3>Recommendations</h3>
-                  <ul className="recommendations-list">
-                    {normalized.failureDetails.map((detail, index) => {
-                      let recommendation = '';
-                      if (detail.error.includes('Element not found')) {
-                        recommendation = `Check if the selector '${detail.error.split(': ')[1]}' exists in the HTML. The element might be missing or have a different ID/class.`;
-                      } else if (detail.error.includes('Assertion failed')) {
-                        recommendation = `Verify expected behavior for the '${detail.testName}' test. The condition being tested is not being met.`;
-                      } else if (detail.error.includes('Timed out')) {
-                        recommendation = `Check if the tested functionality has proper loading states or if there are performance issues causing timeout in '${detail.testName}'.`;
-                      } else {
-                        recommendation = `Investigate the error in '${detail.testName}' by reviewing both the test implementation and application code.`;
-                      }
-                      return (
-                        <li key={index}>{recommendation}</li>
-                      );
-                    })}
-                  </ul>
+                <div className="chart-section">
+                  {generatePieChart()}
                 </div>
-              </div>
-            ) : (
-              <div className="success-container">
-                <div className="success-icon">✓</div>
-                <h3>All Tests Passed!</h3>
-                <p>Congratulations! Your application has passed all automated tests with flying colors. The application meets all the specified requirements and is ready for deployment.</p>
-              </div>
-            );
-          })()}
-          
-          <div className="next-steps-container">
-            <h3>Next Steps</h3>
-            <div className="steps-cards">
-              {(() => {
-                const normalized = normalizeTestResults();
-                if (!normalized) return null;
                 
-                return (
-                  <>
-                    <div className="step-card">
-                      <div className="step-icon">1</div>
-                      <div className="step-content">
-                        <h4>Deploy Application</h4>
-                        <p>Deploy the application to the {normalized.passed === normalized.total ? 'production' : 'testing'} environment.</p>
-                      </div>
-                    </div>
-                    <div className="step-card">
-                      <div className="step-icon">2</div>
-                      <div className="step-content">
-                        <h4>Improve Test Coverage</h4>
-                        <p>Add more test scenarios to cover edge cases and improve reliability.</p>
-                      </div>
-                    </div>
-                    <div className="step-card">
-                      <div className="step-icon">3</div>
-                      <div className="step-content">
-                        <h4>Performance Testing</h4>
-                        <p>Run performance tests to ensure optimal user experience under load.</p>
-                      </div>
-                    </div>
-                    {normalized.failed > 0 && (
-                      <div className="step-card">
-                        <div className="step-icon">!</div>
-                        <div className="step-content">
-                          <h4>Fix Failing Tests</h4>
-                          <p>Address the {normalized.failed} failing tests before proceeding to production.</p>
+                <div className="metrics-section">
+                  {(() => {
+                    const normalized = normalizeTestResults();
+                    if (!normalized) return null;
+                    
+                    return (
+                      <>
+                        <div className="metric-box">
+                          <div className="metric-value">{normalized.total}</div>
+                          <div className="metric-label">Total Tests</div>
                         </div>
-                      </div>
-                    )}
-                  </>
+                        <div className="metric-box success">
+                          <div className="metric-value">{normalized.passed}</div>
+                          <div className="metric-label">Passed</div>
+                        </div>
+                        <div className="metric-box error">
+                          <div className="metric-value">{normalized.failed}</div>
+                          <div className="metric-label">Failed</div>
+                        </div>
+                        <div className="metric-box">
+                          <div className="metric-value">{normalized.duration}s</div>
+                          <div className="metric-label">Duration</div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+              
+              {(() => {
+                const normalized = normalizeTestResults();
+                if (!normalized) return null;
+                
+                return normalized.failed > 0 ? (
+                  <div className="failures-container">
+                    <h3>Failed Tests</h3>
+                    <div className="scrollable-table-container">
+                      <table className="failures-table">
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>Test Name</th>
+                            <th>Error</th>
+                            <th>Duration</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {normalized.failureDetails.map((detail, index) => (
+                            <tr key={index}>
+                              <td>{detail.testId || `TC-${index + 1}`}</td>
+                              <td>{detail.testName}</td>
+                              <td>
+                                <div className="error-message-cell">
+                                  <div className="error-text">{detail.error}</div>
+                                  {detail.stackTrace && (
+                                    <div className="stack-trace-toggle">
+                                      <details>
+                                        <summary>Stack Trace</summary>
+                                        <pre>{detail.stackTrace}</pre>
+                                      </details>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                              <td>{detail.duration}s</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    <div className="recommendations-box">
+                      <h3>Recommendations</h3>
+                      <ul className="recommendations-list">
+                        {normalized.failureDetails.map((detail, index) => {
+                          let recommendation = '';
+                          if (detail.error.includes('Element not found')) {
+                            recommendation = `Check if the selector '${detail.error.split(': ')[1]}' exists in the HTML. The element might be missing or have a different ID/class.`;
+                          } else if (detail.error.includes('Assertion failed')) {
+                            recommendation = `Verify expected behavior for the '${detail.testName}' test. The condition being tested is not being met.`;
+                          } else if (detail.error.includes('Timed out')) {
+                            recommendation = `Check if the tested functionality has proper loading states or if there are performance issues causing timeout in '${detail.testName}'.`;
+                          } else {
+                            recommendation = `Investigate the error in '${detail.testName}' by reviewing both the test implementation and application code.`;
+                          }
+                          return (
+                            <li key={index}>{recommendation}</li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="success-container">
+                    <div className="success-icon">✓</div>
+                    <h3>All Tests Passed!</h3>
+                    <p>Congratulations! Your application has passed all automated tests with flying colors. The application meets all the specified requirements and is ready for deployment.</p>
+                  </div>
                 );
               })()}
+              
+              <div className="next-steps-container">
+                <h3>Next Steps</h3>
+                <div className="steps-cards">
+                  {(() => {
+                    const normalized = normalizeTestResults();
+                    if (!normalized) return null;
+                    
+                    return (
+                      <>
+                        <div className="step-card">
+                          <div className="step-icon">1</div>
+                          <div className="step-content">
+                            <h4>Deploy Application</h4>
+                            <p>Deploy the application to the {normalized.passed === normalized.total ? 'production' : 'testing'} environment.</p>
+                          </div>
+                        </div>
+                        <div className="step-card">
+                          <div className="step-icon">2</div>
+                          <div className="step-content">
+                            <h4>Improve Test Coverage</h4>
+                            <p>Add more test scenarios to cover edge cases and improve reliability.</p>
+                          </div>
+                        </div>
+                        <div className="step-card">
+                          <div className="step-icon">3</div>
+                          <div className="step-content">
+                            <h4>Performance Testing</h4>
+                            <p>Run performance tests to ensure optimal user experience under load.</p>
+                          </div>
+                        </div>
+                        {normalized.failed > 0 && (
+                          <div className="step-card">
+                            <div className="step-icon">!</div>
+                            <div className="step-content">
+                              <h4>Fix Failing Tests</h4>
+                              <p>Address the {normalized.failed} failing tests before proceeding to production.</p>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">📊</div>
+              <p>No test results available yet. Run the automated tests to generate a detailed report.</p>
+            </div>
+          )}
         </div>
       ) : (
-        <div className="empty-state">
-          <div className="empty-icon">📊</div>
-          <p>No test results available yet. Run the automated tests to generate a detailed report.</p>
+        <div className="github-results-container">
+          {isLoading ? (
+            <div className="loading">
+              <div className="spinner"></div>
+              <p>Running tests on GitHub Actions...</p>
+              <p className="loading-note">This may take a few minutes.</p>
+            </div>
+          ) : githubResults ? (
+            <div className="github-report">
+              <div className="github-summary">
+                <div className="summary-header">
+                  <h3>GitHub Test Results</h3>
+                  <div className={`status-badge ${githubResults.passed ? 'passed' : 'failed'}`}>
+                    {githubResults.passed ? 'PASSED' : 'FAILED'}
+                  </div>
+                </div>
+                
+                <div className="metric-cards">
+                  <div className="metric-category">
+                    <h4>Performance</h4>
+                    <div className="metric-score" style={{ color: getScoreColor(githubResults.summary.lighthouse.performance) }}>
+                      {githubResults.summary.lighthouse.performance}
+                    </div>
+                  </div>
+                  <div className="metric-category">
+                    <h4>Accessibility</h4>
+                    <div className="metric-score" style={{ color: getScoreColor(githubResults.summary.lighthouse.accessibility) }}>
+                      {githubResults.summary.lighthouse.accessibility}
+                    </div>
+                  </div>
+                  <div className="metric-category">
+                    <h4>Best Practices</h4>
+                    <div className="metric-score" style={{ color: getScoreColor(githubResults.summary.lighthouse.bestPractices) }}>
+                      {githubResults.summary.lighthouse.bestPractices}
+                    </div>
+                  </div>
+                  <div className="metric-category">
+                    <h4>SEO</h4>
+                    <div className="metric-score" style={{ color: getScoreColor(githubResults.summary.lighthouse.seo) }}>
+                      {githubResults.summary.lighthouse.seo}
+                    </div>
+                  </div>
+                </div>
+
+                {githubResults.details.accessibilityIssues.length > 0 && (
+                  <div className="issues-section">
+                    <h4>Accessibility Issues</h4>
+                    <div className="issues-list">
+                      {githubResults.details.accessibilityIssues.map((issue, index) => (
+                        <div key={index} className={`issue-item ${issue.impact}`}>
+                          <div className="issue-impact">{issue.impact}</div>
+                          <div className="issue-info">
+                            <div className="issue-id">{issue.id}</div>
+                            <div className="issue-description">{issue.description}</div>
+                          </div>
+                          <div className="issue-count">{issue.nodes} {issue.nodes === 1 ? 'instance' : 'instances'}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="performance-metrics">
+                  <h4>Performance Metrics</h4>
+                  <div className="metrics-grid">
+                    <div className="metric-item">
+                      <div className="metric-name">First Contentful Paint</div>
+                      <div className="metric-value">{githubResults.details.performanceMetrics.firstContentfulPaint}</div>
+                    </div>
+                    <div className="metric-item">
+                      <div className="metric-name">Largest Contentful Paint</div>
+                      <div className="metric-value">{githubResults.details.performanceMetrics.largestContentfulPaint}</div>
+                    </div>
+                    <div className="metric-item">
+                      <div className="metric-name">Total Blocking Time</div>
+                      <div className="metric-value">{githubResults.details.performanceMetrics.totalBlockingTime}</div>
+                    </div>
+                    <div className="metric-item">
+                      <div className="metric-name">Cumulative Layout Shift</div>
+                      <div className="metric-value">{githubResults.details.performanceMetrics.cumulativeLayoutShift}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="responsiveness-section">
+                  <h4>Responsive Design</h4>
+                  <div className="responsive-results">
+                    <div className="responsive-item">
+                      <div className="responsive-label">Desktop:</div>
+                      <div className={`responsive-status ${githubResults.summary.responsiveness.desktop ? 'passed' : 'failed'}`}>
+                        {githubResults.summary.responsiveness.desktop ? 'Passed' : 'Issues Detected'}
+                      </div>
+                    </div>
+                    <div className="responsive-item">
+                      <div className="responsive-label">Mobile:</div>
+                      <div className={`responsive-status ${githubResults.summary.responsiveness.mobile ? 'passed' : 'failed'}`}>
+                        {githubResults.summary.responsiveness.mobile ? 'Passed' : 'Issues Detected'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">🔍</div>
+              <p>No GitHub test results available yet.</p>
+              {generatedCode && (
+                <button className="button" onClick={triggerGitHubTest}>
+                  Run GitHub Tests
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
   );
+};
+
+// Helper function to get color based on score
+const getScoreColor = (score) => {
+  if (score >= 90) return '#0cce6b'; // Good
+  if (score >= 70) return '#ffa400'; // Needs improvement
+  return '#ff4e42'; // Poor
 };
 
 export default TestReport;

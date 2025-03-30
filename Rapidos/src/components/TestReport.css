@@ -583,3 +583,340 @@
   color: #6c757d;
   font-style: italic;
 }
+
+/* Tab navigation for Local and GitHub Results */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.section-header h2 {
+  font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 22px;
+  margin: 0;
+  color: var(--text-color);
+}
+
+.tab-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.tab-button {
+  font-family: 'SF Pro Text', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--light-text);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab-button:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.03);
+  color: var(--primary-color);
+}
+
+.tab-button.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.tab-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loading-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s linear infinite;
+}
+
+/* GitHub Results Container */
+.github-results-container {
+  padding: 0;
+}
+
+.github-report {
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  overflow: hidden;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.github-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.summary-header h3 {
+  font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-color);
+}
+
+.status-badge {
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-radius: 20px;
+}
+
+.status-badge.passed {
+  background-color: rgba(6, 214, 160, 0.15);
+  color: #06d6a0;
+}
+
+.status-badge.failed {
+  background-color: rgba(239, 71, 111, 0.15);
+  color: #ef476f;
+}
+
+/* Metric Cards */
+.metric-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.metric-category {
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  padding: 16px;
+  min-width: 120px;
+  flex: 1;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.metric-category h4 {
+  font-family: 'SF Pro Text', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  margin: 0 0 8px 0;
+}
+
+.metric-score {
+  font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Accessibility Issues */
+.issues-section {
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 10px;
+}
+
+.issues-section h4 {
+  font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: var(--text-color);
+}
+
+.issues-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.issue-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.issue-impact {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background-color: #f8d7da;
+  color: #842029;
+}
+
+.issue-item.serious .issue-impact {
+  background-color: #f8d7da;
+  color: #842029;
+}
+
+.issue-item.moderate .issue-impact {
+  background-color: #fff3cd;
+  color: #664d03;
+}
+
+.issue-item.minor .issue-impact {
+  background-color: #cfe2ff;
+  color: #084298;
+}
+
+.issue-info {
+  flex: 1;
+}
+
+.issue-id {
+  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.issue-description {
+  font-size: 14px;
+  color: #444;
+}
+
+.issue-count {
+  font-size: 12px;
+  padding: 4px 8px;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 12px;
+  color: #666;
+  white-space: nowrap;
+}
+
+/* Performance Metrics */
+.performance-metrics {
+  margin-top: 24px;
+}
+
+.performance-metrics h4 {
+  font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: var(--text-color);
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.metric-item {
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.metric-name {
+  font-family: 'SF Pro Text', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.metric-value {
+  font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Responsiveness Section */
+.responsiveness-section {
+  margin-top: 24px;
+}
+
+.responsiveness-section h4 {
+  font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: var(--text-color);
+}
+
+.responsive-results {
+  display: flex;
+  gap: 24px;
+}
+
+.responsive-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.responsive-label {
+  font-family: 'SF Pro Text', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  color: #666;
+}
+
+.responsive-status {
+  font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.responsive-status.passed {
+  background-color: rgba(6, 214, 160, 0.15);
+  color: #06d6a0;
+}
+
+.responsive-status.failed {
+  background-color: rgba(239, 71, 111, 0.15);
+  color: #ef476f;
+}
+
+/* Loading state */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--primary-color);
+}
+
+.loading-note {
+  color: var(--light-text);
+  font-size: 14px;
+  margin-top: 8px;
+}
