@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Individual API keys for each type of API call
 const API_KEYS = {
-  requirements: 'AIzaSyDbPFoAp6yB-g36LO_9aVBTJdMBSlDdm-w',
+  requirements: 'AIzaSyCZyzs40ZkToR46aceggFbDduxwwqcNszg',
   application: 'AIzaSyCKlzvue7-sXoEr32rkLLgxgIv9PwGk1h4',
   testCases: 'AIzaSyAB5fc74OwEd2j86bTa-pa2Kb-NlGprZBo',
   testScenarios: 'AIzaSyB8NewOH3AhLNMOtTWL6T49xk9bLOUGCoI',
