@@ -6,7 +6,7 @@ const API_KEYS = {
   application: 'AIzaSyCKlzvue7-sXoEr32rkLLgxgIv9PwGk1h4',
   testCases: 'AIzaSyAB5fc74OwEd2j86bTa-pa2Kb-NlGprZBo',
   testScenarios: 'AIzaSyB8NewOH3AhLNMOtTWL6T49xk9bLOUGCoI',
-  testCode: 'AIzaSyCvIHSgSgCArR6Lb2qK_oh0TeBxAKcz4so',
+  testCode: 'AIzaSyDYmlUQ34V5tO-JEKIp4s3WbSTbFHa_IbA',
   testReport: 'AIzaSyDbPFoAp6yB-g36LO_9aVBTJdMBSlDdm-w'
 };
 
