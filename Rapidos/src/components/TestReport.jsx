@@ -244,16 +244,30 @@ const TestReport = ({ testResults, generatedCode, figmaFileKey }) => {
     setTimeout(() => setReportCopied(false), 2000);
   };
 
+  useEffect(() => {
+    console.log("TestReport component mounted");
+    // Uncomment the next line to start in GitHub tab for debugging
+    // setActiveTab('github');
+  }, []);
+
   // Trigger GitHub Actions workflow when a new code is generated
   useEffect(() => {
     if (generatedCode && figmaFileKey) {
+      console.log("Auto-triggering GitHub test with:", { generatedCode: generatedCode?.substring(0, 50) + "...", figmaFileKey });
       triggerGitHubTest();
     }
   }, [generatedCode, figmaFileKey]);
 
-  // Function to trigger GitHub Actions workflow
+  // Function to trigger GitHub Actions workflow - improved with better debugging
   const triggerGitHubTest = async () => {
-    if (!generatedCode || !figmaFileKey) return;
+    console.log("triggerGitHubTest called", { 
+      hasGeneratedCode: !!generatedCode,
+      hasFigmaFileKey: !!figmaFileKey,
+      currentTab: activeTab
+    });
+    
+    // For testing, remove the check to allow running even without code/key
+    // if (!generatedCode || !figmaFileKey) return;
     
     setIsLoading(true);
     
@@ -639,7 +653,13 @@ const TestReport = ({ testResults, generatedCode, figmaFileKey }) => {
             <div className="empty-state">
               <div className="empty-icon">🔍</div>
               <p>No GitHub test results available yet.</p>
-              <button className="button" onClick={triggerGitHubTest}>
+              <button 
+                className="button trigger-github-test" 
+                onClick={() => {
+                  console.log("GitHub Test button clicked");
+                  triggerGitHubTest();
+                }}
+              >
                 Run GitHub Tests
               </button>
             </div>
